@@ -1,0 +1,1629 @@
+ 
+import numpy as np 
+import pandas as pd
+import seaborn as sns
+import matplotlib as mp
+import matplotlib.pyplot as plt 
+from matplotlib.lines import Line2D
+import matplotlib.patches as mpatches
+import matplotx
+
+ 
+from sklearn.impute import KNNImputer 
+from sklearn.linear_model import ElasticNetCV
+
+sns.set_style("darkgrid") # nicer graphs
+!pip install nord
+!pip install matplotx
+Requirement already satisfied: nord in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (0.2.0)
+Requirement already satisfied: decorator in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from nord) (5.1.1)
+Requirement already satisfied: structlog in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from nord) (23.2.0)
+Requirement already satisfied: aiohttp in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from nord) (3.8.6)
+Requirement already satisfied: termcolor in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from nord) (2.3.0)
+Requirement already satisfied: attrs>=17.3.0 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from aiohttp->nord) (22.1.0)
+Requirement already satisfied: charset-normalizer<4.0,>=2.0 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from aiohttp->nord) (2.0.12)
+Requirement already satisfied: multidict<7.0,>=4.5 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from aiohttp->nord) (6.0.4)
+Requirement already satisfied: async-timeout<5.0,>=4.0.0a3 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from aiohttp->nord) (4.0.3)
+Requirement already satisfied: yarl<2.0,>=1.0 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from aiohttp->nord) (1.9.2)
+Requirement already satisfied: frozenlist>=1.1.1 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from aiohttp->nord) (1.4.0)
+Requirement already satisfied: aiosignal>=1.1.2 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from aiohttp->nord) (1.3.1)
+Requirement already satisfied: idna>=2.0 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from yarl<2.0,>=1.0->aiohttp->nord) (3.4)
+Requirement already satisfied: matplotx in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (0.3.10)
+Requirement already satisfied: matplotlib in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotx) (3.5.3)
+Requirement already satisfied: numpy>=1.20.0 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotx) (1.23.3)
+Requirement already satisfied: cycler>=0.10 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotlib->matplotx) (0.11.0)
+Requirement already satisfied: fonttools>=4.22.0 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotlib->matplotx) (4.37.4)
+Requirement already satisfied: kiwisolver>=1.0.1 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotlib->matplotx) (1.4.4)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotlib->matplotx) (21.3)
+Requirement already satisfied: pillow>=6.2.0 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotlib->matplotx) (9.1.1)
+Requirement already satisfied: pyparsing>=2.2.1 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotlib->matplotx) (3.0.9)
+Requirement already satisfied: python-dateutil>=2.7 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from matplotlib->matplotx) (2.8.2)
+Requirement already satisfied: six>=1.5 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from python-dateutil>=2.7->matplotlib->matplotx) (1.16.0)
+In [7]:
+data = pd.read_csv("number-of-deaths-by-risk-factor.csv")
+In [8]:
+data.head()
+Out[8]:	
+Entity	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to drug use, in both sexes aged all ages	Deaths that are from all causes attributed to low bone mineral density, in both sexes aged all ages	Deaths that are from all causes attributed to vitamin a deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to child stunting, in both sexes aged all ages	Deaths that are from all causes attributed to non-exclusive breastfeeding, in both sexes aged all ages	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages
+0	Afghanistan	AFG	1990	25633.129	1044.9089	7077.3160	356.21470	3184.9550	3701.994	4794.4650	...	173.57869	388.91074	2015.5115	7685.7427	2216.0415	563.81067	2782.4385	2636.6455	4825.3450	12704.7810
+1	Afghanistan	AFG	1991	25871.803	1054.9584	7149.0854	363.73020	3248.3767	4309.282	4921.0957	...	187.89368	388.78424	2056.3538	7885.6724	2501.0251	610.78830	2845.6702	2651.8865	5127.1780	12843.5130
+2	Afghanistan	AFG	1992	26308.795	1074.6057	7297.3086	375.90024	3350.9207	5356.498	5278.5186	...	210.81355	392.72090	2100.4310	8567.7400	3052.5388	699.58734	3030.8933	2687.9224	5888.8438	13125.6210
+3	Afghanistan	AFG	1993	26961.360	1103.3705	7498.5340	388.57156	3479.8118	7151.521	5734.0303	...	232.17093	410.67044	2315.5906	9875.2900	3725.8757	772.88920	3255.7598	2744.3599	7006.9080	13501.3545
+4	Afghanistan	AFG	1994	27658.424	1133.8824	7697.5890	398.72700	3609.8315	7191.639	6050.2290	...	247.29659	412.98883	2664.5537	11030.8480	3832.5317	811.97064	3400.9597	2805.2195	7421.1280	13872.5840
+5 rows × 31 columns
+
+In [9]:
+shape = data.shape
+print("Shape = {}".format(shape))
+Shape = (6840, 31)
+In [10]:
+data.sort_values(by=['Year'], ascending=False)
+Out[10]:	
+Entity	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to drug use, in both sexes aged all ages	Deaths that are from all causes attributed to low bone mineral density, in both sexes aged all ages	Deaths that are from all causes attributed to vitamin a deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to child stunting, in both sexes aged all ages	Deaths that are from all causes attributed to non-exclusive breastfeeding, in both sexes aged all ages	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages
+6839	Zimbabwe	ZWE	2019	1.224099e+04	1140.376100	1475.06810	5155.789000	1959.866100	3.914062e+03	1645.976000	...	962.712950	437.887900	81.382640	585.393200	630.752700	259.000200	2.607025e+03	344.590240	4113.118700	3.571353e+03
+3839	Middle East & North Africa (WB)	NaN	2019	6.170644e+05	22742.520000	152478.67000	17790.502000	25597.654000	1.155489e+04	71836.650000	...	14946.187000	16036.946000	266.323460	2918.028600	5094.484000	963.282600	2.751534e+05	91147.870000	6088.226600	3.200919e+05
+5729	South-East Asia Region (WHO)	NaN	2019	2.394045e+06	346306.620000	342704.88000	455444.530000	362548.300000	5.986149e+05	355276.470000	...	100176.580000	141967.560000	1826.717700	26415.406000	23094.460000	12701.582000	1.264076e+06	146765.700000	208756.230000	8.859939e+05
+2009	Europe & Central Asia (WB)	NaN	2019	2.343457e+06	280028.340000	507360.66000	582179.800000	171249.390000	2.247595e+03	169045.750000	...	84348.600000	67328.800000	19.004581	1113.861900	1829.286600	193.469760	4.332345e+05	215339.860000	5329.317000	1.207305e+06
+3599	Maldives	MDV	2019	3.375677e+02	65.976720	65.22511	13.089385	32.293960	8.815433e+00	45.742840	...	15.656739	8.295960	0.054260	0.717718	0.631189	1.076335	4.854641e+01	29.486141	4.189623	1.594693e+02
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+4320	Niue	NIU	1990	5.722723e+00	1.044738	1.09770	0.580518	0.648854	3.416383e-01	1.184781	...	0.121390	0.115470	0.001776	0.019423	0.015761	0.007570	4.796802e-01	0.647681	0.101261	2.197308e+00
+4290	Nigeria	NGA	1990	6.232236e+04	5312.925300	8952.50200	30679.615000	6838.560500	2.497803e+05	7165.395500	...	1026.403400	2138.831000	20012.680000	87495.100000	52087.190000	2328.253200	2.233062e+04	2811.991700	130240.150000	1.833860e+04
+4260	Niger	NER	1990	4.125309e+03	383.693050	541.45580	501.089750	702.902300	3.156509e+04	979.766540	...	16.197208	175.926420	5648.258300	14530.438000	6824.982400	466.500550	1.424263e+03	133.562520	17291.656000	9.535034e+02
+4230	Nicaragua	NIC	1990	1.785918e+03	285.028560	253.55363	606.145140	212.480290	1.940646e+03	234.799710	...	23.653260	60.266186	37.393032	415.517400	852.223200	18.495724	2.361001e+02	38.427116	679.982700	6.381345e+02
+3420	Lower Middle Income (WB)	NaN	1990	1.794984e+06	251820.330000	317171.62000	359431.400000	269048.160000	1.788747e+06	366990.060000	...	53618.380000	73227.490000	126158.910000	531230.100000	292970.620000	50690.120000	6.080926e+05	99030.930000	779433.600000	7.181689e+05
+6840 rows × 31 columns
+
+In [11]:
+PM_data = data[~data["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"].isna()] # remove rows with NaN on GDP
+PM_data = data[PM_data["Year"] > 2018] # actually, the only data we will obtain is 2018 :) 
+PM_data = PM_data.dropna(subset=['Code', 'Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages'])
+PM_data = PM_data[PM_data["Entity"] != "World"] 
+PM_data
+Out[11]:	
+Entity	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to drug use, in both sexes aged all ages	Deaths that are from all causes attributed to low bone mineral density, in both sexes aged all ages	Deaths that are from all causes attributed to vitamin a deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to child stunting, in both sexes aged all ages	Deaths that are from all causes attributed to non-exclusive breastfeeding, in both sexes aged all ages	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages
+29	Afghanistan	AFG	2019	36017.170000	1421.832900	10334.866000	583.029400	4582.984000	3750.705300	6061.573700	...	699.909000	631.513850	392.736850	3071.426800	1762.705300	761.420300	8678.681000	4117.169000	3941.357700	19745.988000
+89	Albania	ALB	2019	7609.211400	2444.682100	1519.789000	736.671750	217.156880	3.780118	773.714100	...	129.683700	64.898640	0.100605	9.534126	3.896263	0.381268	1532.443100	309.929600	8.123295	2790.601800
+119	Algeria	DZA	2019	58601.582000	1909.833100	14771.980000	1284.973400	2648.464800	276.997470	7670.411000	...	1030.342700	1372.259800	2.792199	68.157720	145.736360	93.949870	21613.342000	9579.853000	325.857240	27534.021000
+149	American Samoa	ASM	2019	86.669290	6.474488	15.690391	2.086313	8.181448	2.010538	15.218075	...	2.284843	1.620934	0.021888	0.118351	0.102219	0.138421	7.751950	11.770247	0.412116	31.364481
+179	Andorra	AND	2019	100.602325	5.914475	19.194310	40.349888	4.721110	0.019592	7.639630	...	5.993098	12.018740	0.000012	0.000720	0.003609	0.001117	10.562062	12.744569	0.215403	41.114360
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+6629	Venezuela	VEN	2019	43138.816000	6542.966000	5686.072000	8621.342000	2589.774700	772.601100	3752.953600	...	499.069270	1146.922400	3.426007	66.454240	168.482360	63.156986	12383.936000	1220.989700	446.558840	15271.742000
+6659	Vietnam	VNM	2019	158375.450000	32154.800000	11914.710000	52984.324000	15136.054000	1250.593800	19085.412000	...	9605.107000	8389.809000	6.680296	238.600450	246.177170	29.637976	37456.710000	5556.346000	2053.345000	40602.906000
+6779	Yemen	YEM	2019	30563.783000	1240.842800	9047.844000	861.437870	3609.496600	5351.432600	4466.699000	...	563.121800	922.904540	202.783540	1315.519500	1984.820000	497.770170	11281.991000	3669.953100	2198.282000	16920.540000
+6809	Zambia	ZMB	2019	10340.324000	1827.762700	872.759800	6869.730000	2055.743200	5915.021500	919.053400	...	394.068600	397.834320	112.707770	1088.569100	738.964100	177.371190	2948.647500	328.967560	3975.220000	2112.266000
+6839	Zimbabwe	ZWE	2019	12240.987000	1140.376100	1475.068100	5155.789000	1959.866100	3914.061800	1645.976000	...	962.712950	437.887900	81.382640	585.393200	630.752700	259.000200	2607.025100	344.590240	4113.118700	3571.353300
+204 rows × 31 columns
+
+In [12]:
+PM_data.rename(columns={"Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages": "PM_deaths"})
+Out[12]:	
+Entity	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to drug use, in both sexes aged all ages	Deaths that are from all causes attributed to low bone mineral density, in both sexes aged all ages	Deaths that are from all causes attributed to vitamin a deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to child stunting, in both sexes aged all ages	Deaths that are from all causes attributed to non-exclusive breastfeeding, in both sexes aged all ages	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	PM_deaths	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages
+29	Afghanistan	AFG	2019	36017.170000	1421.832900	10334.866000	583.029400	4582.984000	3750.705300	6061.573700	...	699.909000	631.513850	392.736850	3071.426800	1762.705300	761.420300	8678.681000	4117.169000	3941.357700	19745.988000
+89	Albania	ALB	2019	7609.211400	2444.682100	1519.789000	736.671750	217.156880	3.780118	773.714100	...	129.683700	64.898640	0.100605	9.534126	3.896263	0.381268	1532.443100	309.929600	8.123295	2790.601800
+119	Algeria	DZA	2019	58601.582000	1909.833100	14771.980000	1284.973400	2648.464800	276.997470	7670.411000	...	1030.342700	1372.259800	2.792199	68.157720	145.736360	93.949870	21613.342000	9579.853000	325.857240	27534.021000
+149	American Samoa	ASM	2019	86.669290	6.474488	15.690391	2.086313	8.181448	2.010538	15.218075	...	2.284843	1.620934	0.021888	0.118351	0.102219	0.138421	7.751950	11.770247	0.412116	31.364481
+179	Andorra	AND	2019	100.602325	5.914475	19.194310	40.349888	4.721110	0.019592	7.639630	...	5.993098	12.018740	0.000012	0.000720	0.003609	0.001117	10.562062	12.744569	0.215403	41.114360
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+6629	Venezuela	VEN	2019	43138.816000	6542.966000	5686.072000	8621.342000	2589.774700	772.601100	3752.953600	...	499.069270	1146.922400	3.426007	66.454240	168.482360	63.156986	12383.936000	1220.989700	446.558840	15271.742000
+6659	Vietnam	VNM	2019	158375.450000	32154.800000	11914.710000	52984.324000	15136.054000	1250.593800	19085.412000	...	9605.107000	8389.809000	6.680296	238.600450	246.177170	29.637976	37456.710000	5556.346000	2053.345000	40602.906000
+6779	Yemen	YEM	2019	30563.783000	1240.842800	9047.844000	861.437870	3609.496600	5351.432600	4466.699000	...	563.121800	922.904540	202.783540	1315.519500	1984.820000	497.770170	11281.991000	3669.953100	2198.282000	16920.540000
+6809	Zambia	ZMB	2019	10340.324000	1827.762700	872.759800	6869.730000	2055.743200	5915.021500	919.053400	...	394.068600	397.834320	112.707770	1088.569100	738.964100	177.371190	2948.647500	328.967560	3975.220000	2112.266000
+6839	Zimbabwe	ZWE	2019	12240.987000	1140.376100	1475.068100	5155.789000	1959.866100	3914.061800	1645.976000	...	962.712950	437.887900	81.382640	585.393200	630.752700	259.000200	2607.025100	344.590240	4113.118700	3571.353300
+204 rows × 31 columns
+
+In [13]:
+plt.figure(figsize=(13,8))
+PM_data["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"].hist(bins=5)
+plt.xlabel("PM deaths in millions")
+plt.ylabel("# Countries")
+plt.title("Histogram of Countries' deaths from PM")
+plt.show()
+
+In [14]:
+plt.figure(figsize=(13,8))
+PM_data[PM_data["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"] < 10000]["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"].hist(bins=5)
+plt.ylabel("# Countries")
+plt.title("Histogram of Countries' Death from PM")
+plt.show()
+
+In [15]:
+PM_deaths = PM_data["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"]
+country = PM_data["Entity"]
+In [16]:
+Population_data = pd.read_csv("population-and-demography.csv")
+In [17]:
+Population_data.head()
+Out[17]:	
+Country name	Year	Population	Population of children under the age of 1	Population of children under the age of 5	Population of children under the age of 15	Population under the age of 25	Population aged 15 to 64 years	Population older than 15 years	Population older than 18 years	...	Population aged 15 to 19 years	Population aged 20 to 29 years	Population aged 30 to 39 years	Population aged 40 to 49 years	Population aged 50 to 59 years	Population aged 60 to 69 years	Population aged 70 to 79 years	Population aged 80 to 89 years	Population aged 90 to 99 years	Population older than 100 years
+0	Afghanistan	1950	7480464	301735.0	1248282	3068855	4494349	4198587	4411609	3946595	...	757113	1241348	909953	661807	467170	271905	92691	9499	123	0.0
+1	Afghanistan	1951	7571542	299368.0	1246857	3105444	4552138	4250002	4466098	3993640	...	768616	1260904	922765	667015	468881	273286	94358	10155	118	0.0
+2	Afghanistan	1952	7667534	305393.0	1248220	3145070	4613604	4303436	4522464	4041439	...	781411	1280288	935638	672491	470898	274852	96026	10721	139	0.0
+3	Afghanistan	1953	7764549	311574.0	1254725	3186382	4676232	4356242	4578167	4088379	...	794308	1298803	948321	678064	472969	276577	97705	11254	166	0.0
+4	Afghanistan	1954	7864289	317584.0	1267817	3231060	4741371	4408474	4633229	4136116	...	806216	1316768	961484	684153	475117	278210	99298	11793	190	0.0
+5 rows × 24 columns
+
+In [18]:
+Pop_data = Population_data[~Population_data["Population"].isna()] # remove rows with NaN on GDP
+Pop_data = Population_data.dropna(subset=['Year', 'Population', 'Country name'])
+Pop_data = Population_data[Population_data["Country name"] != "World"] 
+Pop_data = Population_data[Population_data["Year"] == 2019 ]
+Pop_data
+Out[18]:	
+Country name	Year	Population	Population of children under the age of 1	Population of children under the age of 5	Population of children under the age of 15	Population under the age of 25	Population aged 15 to 64 years	Population older than 15 years	Population older than 18 years	...	Population aged 15 to 19 years	Population aged 20 to 29 years	Population aged 30 to 39 years	Population aged 40 to 49 years	Population aged 50 to 59 years	Population aged 60 to 69 years	Population aged 70 to 79 years	Population aged 80 to 89 years	Population aged 90 to 99 years	Population older than 100 years
+69	Afghanistan	2019	37769496	1313684.0	6262390	16728620	24950588	20127700	21040860	18284280	...	4461340	6738758	4039411	2701018	1653460	914688	431683	95602	4901	14.0
+141	Africa (UN)	2019	1327701100	42313264.0	201562530	540843400	794207100	741291140	786845200	702767700	...	135980420	220823950	169064340	114105656	75526640	44771480	20495524	5549767	527419	12594.0
+213	Albania	2019	2873883	28770.0	150467	481425	914818	1951299	2392240	2274074	...	202065	468425	366904	336485	395103	326711	201536	84182	10829	218.0
+285	Algeria	2019	42705372	984232.0	4922011	13013432	18995820	27191522	29691574	27895046	...	2929659	6546221	7171787	5446353	3771832	2339750	1056596	393452	35925	365.0
+357	American Samoa	2019	47341	845.0	4460	13674	21713	30770	33667	31176	...	4044	8250	5238	5782	5530	3269	1233	295	26	0.0
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+17997	Western Sahara	2019	544883	9382.0	46960	136432	214429	380416	408436	384964	...	38818	85098	107264	78942	51755	31753	12072	2496	238	15.0
+18069	World	2019	7764951000	135471330.0	684872600	2009205500	3221275600	5041093000	5755242000	5383739000	...	615536000	1200389900	1133424100	963090600	809066200	579960400	306498750	126700504	20575482	503572.0
+18141	Yemen	2019	31546694	960660.0	4641668	12777493	19335176	17905848	18769192	16676792	...	3418962	6042447	4254819	2376892	1372097	771287	417505	108440	6742	9.0
+18213	Zambia	2019	18380478	624212.0	2978731	8105772	11831224	9959988	10274652	9028986	...	2010459	3189291	2331077	1454984	759359	353356	137864	35003	3259	54.0
+18285	Zimbabwe	2019	15354606	468844.0	2281740	6367398	9543409	8473475	8986973	7909270	...	1759205	2546398	2085636	1220993	606266	479827	218763	60339	9546	235.0
+254 rows × 24 columns
+
+In [19]:
+Pop_data = Pop_data[[ "Population", "Country name"]]
+In [20]:
+Pop_data.rename(columns={"Country name" : "Country"})
+Out[20]:	
+Population	Country
+69	37769496	Afghanistan
+141	1327701100	Africa (UN)
+213	2873883	Albania
+285	42705372	Algeria
+357	47341	American Samoa
+...	...	...
+17997	544883	Western Sahara
+18069	7764951000	World
+18141	31546694	Yemen
+18213	18380478	Zambia
+18285	15354606	Zimbabwe
+254 rows × 2 columns
+
+In [21]:
+PM_data.head()
+Out[21]:	
+Entity	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to drug use, in both sexes aged all ages	Deaths that are from all causes attributed to low bone mineral density, in both sexes aged all ages	Deaths that are from all causes attributed to vitamin a deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to child stunting, in both sexes aged all ages	Deaths that are from all causes attributed to non-exclusive breastfeeding, in both sexes aged all ages	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages
+29	Afghanistan	AFG	2019	36017.170000	1421.832900	10334.866000	583.029400	4582.984000	3750.705300	6061.573700	...	699.909000	631.513850	392.736850	3071.426800	1762.705300	761.420300	8678.681000	4117.169000	3941.357700	19745.988000
+89	Albania	ALB	2019	7609.211400	2444.682100	1519.789000	736.671750	217.156880	3.780118	773.714100	...	129.683700	64.898640	0.100605	9.534126	3.896263	0.381268	1532.443100	309.929600	8.123295	2790.601800
+119	Algeria	DZA	2019	58601.582000	1909.833100	14771.980000	1284.973400	2648.464800	276.997470	7670.411000	...	1030.342700	1372.259800	2.792199	68.157720	145.736360	93.949870	21613.342000	9579.853000	325.857240	27534.021000
+149	American Samoa	ASM	2019	86.669290	6.474488	15.690391	2.086313	8.181448	2.010538	15.218075	...	2.284843	1.620934	0.021888	0.118351	0.102219	0.138421	7.751950	11.770247	0.412116	31.364481
+179	Andorra	AND	2019	100.602325	5.914475	19.194310	40.349888	4.721110	0.019592	7.639630	...	5.993098	12.018740	0.000012	0.000720	0.003609	0.001117	10.562062	12.744569	0.215403	41.114360
+5 rows × 31 columns
+
+In [22]:
+df = pd.merge(PM_data,Pop_data,how='left',left_on='Entity',right_on='Country name')
+df
+Out[22]:	
+Entity	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to vitamin a deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to child stunting, in both sexes aged all ages	Deaths that are from all causes attributed to non-exclusive breastfeeding, in both sexes aged all ages	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages	Population	Country name
+0	Afghanistan	AFG	2019	36017.170000	1421.832900	10334.866000	583.029400	4582.984000	3750.705300	6061.573700	...	392.736850	3071.426800	1762.705300	761.420300	8678.681000	4117.169000	3941.357700	19745.988000	37769496	Afghanistan
+1	Albania	ALB	2019	7609.211400	2444.682100	1519.789000	736.671750	217.156880	3.780118	773.714100	...	0.100605	9.534126	3.896263	0.381268	1532.443100	309.929600	8.123295	2790.601800	2873883	Albania
+2	Algeria	DZA	2019	58601.582000	1909.833100	14771.980000	1284.973400	2648.464800	276.997470	7670.411000	...	2.792199	68.157720	145.736360	93.949870	21613.342000	9579.853000	325.857240	27534.021000	42705372	Algeria
+3	American Samoa	ASM	2019	86.669290	6.474488	15.690391	2.086313	8.181448	2.010538	15.218075	...	0.021888	0.118351	0.102219	0.138421	7.751950	11.770247	0.412116	31.364481	47341	American Samoa
+4	Andorra	AND	2019	100.602325	5.914475	19.194310	40.349888	4.721110	0.019592	7.639630	...	0.000012	0.000720	0.003609	0.001117	10.562062	12.744569	0.215403	41.114360	76361	Andorra
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+199	Venezuela	VEN	2019	43138.816000	6542.966000	5686.072000	8621.342000	2589.774700	772.601100	3752.953600	...	3.426007	66.454240	168.482360	63.156986	12383.936000	1220.989700	446.558840	15271.742000	28971686	Venezuela
+200	Vietnam	VNM	2019	158375.450000	32154.800000	11914.710000	52984.324000	15136.054000	1250.593800	19085.412000	...	6.680296	238.600450	246.177170	29.637976	37456.710000	5556.346000	2053.345000	40602.906000	95776710	Vietnam
+201	Yemen	YEM	2019	30563.783000	1240.842800	9047.844000	861.437870	3609.496600	5351.432600	4466.699000	...	202.783540	1315.519500	1984.820000	497.770170	11281.991000	3669.953100	2198.282000	16920.540000	31546694	Yemen
+202	Zambia	ZMB	2019	10340.324000	1827.762700	872.759800	6869.730000	2055.743200	5915.021500	919.053400	...	112.707770	1088.569100	738.964100	177.371190	2948.647500	328.967560	3975.220000	2112.266000	18380478	Zambia
+203	Zimbabwe	ZWE	2019	12240.987000	1140.376100	1475.068100	5155.789000	1959.866100	3914.061800	1645.976000	...	81.382640	585.393200	630.752700	259.000200	2607.025100	344.590240	4113.118700	3571.353300	15354606	Zimbabwe
+204 rows × 33 columns
+
+In [23]:
+df.rename(columns={"Entity": "Country", "Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages": "PM_deaths"})
+Out[23]:	
+Country	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to vitamin a deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to child stunting, in both sexes aged all ages	Deaths that are from all causes attributed to non-exclusive breastfeeding, in both sexes aged all ages	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	PM_deaths	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages	Population	Country name
+0	Afghanistan	AFG	2019	36017.170000	1421.832900	10334.866000	583.029400	4582.984000	3750.705300	6061.573700	...	392.736850	3071.426800	1762.705300	761.420300	8678.681000	4117.169000	3941.357700	19745.988000	37769496	Afghanistan
+1	Albania	ALB	2019	7609.211400	2444.682100	1519.789000	736.671750	217.156880	3.780118	773.714100	...	0.100605	9.534126	3.896263	0.381268	1532.443100	309.929600	8.123295	2790.601800	2873883	Albania
+2	Algeria	DZA	2019	58601.582000	1909.833100	14771.980000	1284.973400	2648.464800	276.997470	7670.411000	...	2.792199	68.157720	145.736360	93.949870	21613.342000	9579.853000	325.857240	27534.021000	42705372	Algeria
+3	American Samoa	ASM	2019	86.669290	6.474488	15.690391	2.086313	8.181448	2.010538	15.218075	...	0.021888	0.118351	0.102219	0.138421	7.751950	11.770247	0.412116	31.364481	47341	American Samoa
+4	Andorra	AND	2019	100.602325	5.914475	19.194310	40.349888	4.721110	0.019592	7.639630	...	0.000012	0.000720	0.003609	0.001117	10.562062	12.744569	0.215403	41.114360	76361	Andorra
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+199	Venezuela	VEN	2019	43138.816000	6542.966000	5686.072000	8621.342000	2589.774700	772.601100	3752.953600	...	3.426007	66.454240	168.482360	63.156986	12383.936000	1220.989700	446.558840	15271.742000	28971686	Venezuela
+200	Vietnam	VNM	2019	158375.450000	32154.800000	11914.710000	52984.324000	15136.054000	1250.593800	19085.412000	...	6.680296	238.600450	246.177170	29.637976	37456.710000	5556.346000	2053.345000	40602.906000	95776710	Vietnam
+201	Yemen	YEM	2019	30563.783000	1240.842800	9047.844000	861.437870	3609.496600	5351.432600	4466.699000	...	202.783540	1315.519500	1984.820000	497.770170	11281.991000	3669.953100	2198.282000	16920.540000	31546694	Yemen
+202	Zambia	ZMB	2019	10340.324000	1827.762700	872.759800	6869.730000	2055.743200	5915.021500	919.053400	...	112.707770	1088.569100	738.964100	177.371190	2948.647500	328.967560	3975.220000	2112.266000	18380478	Zambia
+203	Zimbabwe	ZWE	2019	12240.987000	1140.376100	1475.068100	5155.789000	1959.866100	3914.061800	1645.976000	...	81.382640	585.393200	630.752700	259.000200	2607.025100	344.590240	4113.118700	3571.353300	15354606	Zimbabwe
+204 rows × 33 columns
+
+In [81]:
+#conda install basemap
+In [24]:
+%matplotlib inline
+from mpl_toolkits.basemap import Basemap
+In [25]:
+from itertools import chain
+
+def draw_map(m, scale=0.2):
+    # draw a shaded-relief image
+    m.shadedrelief(scale=scale)
+    
+    # lats and longs are returned as a dictionary
+    lats = m.drawparallels(np.linspace(-90, 90, 13))
+    lons = m.drawmeridians(np.linspace(-180, 180, 13))
+
+    # keys contain the plt.Line2D instances
+    lat_lines = chain(*(tup[1][0] for tup in lats.items()))
+    lon_lines = chain(*(tup[1][0] for tup in lons.items()))
+    all_lines = chain(lat_lines, lon_lines)
+    
+    # cycle through these lines and set the desired style
+    for line in all_lines:
+        line.set(linestyle='-', alpha=0.3, color='w')
+        
+fig = plt.figure(figsize=(8, 6), edgecolor='w')
+m = Basemap(projection='cyl', resolution=None,
+            llcrnrlat=-90, urcrnrlat=90,
+            llcrnrlon=-180, urcrnrlon=180, )
+draw_map(m)
+
+In [26]:
+air_data = pd.read_csv("DP_LIVE_20102023114411057.csv")
+In [27]:
+air_data.head()
+Out[27]:	
+LOCATION	INDICATOR	SUBJECT	MEASURE	FREQUENCY	TIME	Value	Flag Codes
+0	AUS	POLLUTIONEXP	EXPOS2PM25	MICGRCUBM	A	1990	7.602	NaN
+1	AUS	POLLUTIONEXP	EXPOS2PM25	MICGRCUBM	A	1995	7.496	NaN
+2	AUS	POLLUTIONEXP	EXPOS2PM25	MICGRCUBM	A	2000	7.366	NaN
+3	AUS	POLLUTIONEXP	EXPOS2PM25	MICGRCUBM	A	2005	6.910	NaN
+4	AUS	POLLUTIONEXP	EXPOS2PM25	MICGRCUBM	A	2010	6.787	NaN
+In [28]:
+air_data = air_data[air_data["TIME"] > 2018]
+air_data = air_data[air_data["MEASURE"] == 'MICGRCUBM']
+In [29]:
+air_data[air_data["TIME"] > 2018]
+air_data[~air_data["Value"].isna()]
+air_data.drop(['INDICATOR', 'SUBJECT', 'MEASURE' ,'FREQUENCY' , 'Flag Codes'], axis=1, inplace=True)
+
+air_data
+Out[29]:	
+LOCATION	TIME	Value
+13	AUS	2019	6.749
+27	AUT	2019	12.225
+41	BEL	2019	12.726
+55	CAN	2019	7.090
+69	CZE	2019	16.965
+...	...	...	...
+4745	TUR	2019	26.851
+4759	PSE	2019	32.556
+4773	TWN	2019	23.534
+4787	EA19	2019	12.208
+4801	EU27_2020	2019	13.475
+174 rows × 3 columns
+
+In [30]:
+air_data.loc[air_data['LOCATION'] == 'AUS']
+Out[30]:	
+LOCATION	TIME	Value
+13	AUS	2019	6.749
+In [31]:
+df2 = pd.merge(df,air_data,how='left',left_on='Code',right_on='LOCATION')
+df2
+Out[31]:	
+Entity	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages	Population	Country name	LOCATION	TIME	Value
+0	Afghanistan	AFG	2019	36017.170000	1421.832900	10334.866000	583.029400	4582.984000	3750.705300	6061.573700	...	761.420300	8678.681000	4117.169000	3941.357700	19745.988000	37769496	Afghanistan	AFG	2019.0	52.998
+1	Albania	ALB	2019	7609.211400	2444.682100	1519.789000	736.671750	217.156880	3.780118	773.714100	...	0.381268	1532.443100	309.929600	8.123295	2790.601800	2873883	Albania	ALB	2019.0	18.460
+2	Algeria	DZA	2019	58601.582000	1909.833100	14771.980000	1284.973400	2648.464800	276.997470	7670.411000	...	93.949870	21613.342000	9579.853000	325.857240	27534.021000	42705372	Algeria	DZA	2019.0	32.916
+3	American Samoa	ASM	2019	86.669290	6.474488	15.690391	2.086313	8.181448	2.010538	15.218075	...	0.138421	7.751950	11.770247	0.412116	31.364481	47341	American Samoa	NaN	NaN	NaN
+4	Andorra	AND	2019	100.602325	5.914475	19.194310	40.349888	4.721110	0.019592	7.639630	...	0.001117	10.562062	12.744569	0.215403	41.114360	76361	Andorra	NaN	NaN	NaN
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+199	Venezuela	VEN	2019	43138.816000	6542.966000	5686.072000	8621.342000	2589.774700	772.601100	3752.953600	...	63.156986	12383.936000	1220.989700	446.558840	15271.742000	28971686	Venezuela	VEN	2019.0	22.215
+200	Vietnam	VNM	2019	158375.450000	32154.800000	11914.710000	52984.324000	15136.054000	1250.593800	19085.412000	...	29.637976	37456.710000	5556.346000	2053.345000	40602.906000	95776710	Vietnam	VNM	2019.0	20.195
+201	Yemen	YEM	2019	30563.783000	1240.842800	9047.844000	861.437870	3609.496600	5351.432600	4466.699000	...	497.770170	11281.991000	3669.953100	2198.282000	16920.540000	31546694	Yemen	YEM	2019.0	44.645
+202	Zambia	ZMB	2019	10340.324000	1827.762700	872.759800	6869.730000	2055.743200	5915.021500	919.053400	...	177.371190	2948.647500	328.967560	3975.220000	2112.266000	18380478	Zambia	ZMB	2019.0	25.924
+203	Zimbabwe	ZWE	2019	12240.987000	1140.376100	1475.068100	5155.789000	1959.866100	3914.061800	1645.976000	...	259.000200	2607.025100	344.590240	4113.118700	3571.353300	15354606	Zimbabwe	ZWE	2019.0	20.847
+204 rows × 36 columns
+
+In [32]:
+df3 = df2[~df2["Value"].isna()]
+df3.drop(['TIME'], axis=1, inplace=True)
+df3
+/var/folders/jb/nrfg9k8s6059zjcm7knb8kr40000gn/T/ipykernel_61741/1818007148.py:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  df3.drop(['TIME'], axis=1, inplace=True)
+Out[32]:	
+Entity	Code	Year	Deaths that are from all causes attributed to high systolic blood pressure, in both sexes aged all ages	Deaths that are from all causes attributed to diet high in sodium, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in whole grains, in both sexes aged all ages	Deaths that are from all causes attributed to alcohol use, in both sexes aged all ages	Deaths that are from all causes attributed to diet low in fruits, in both sexes aged all ages	Deaths that are from all causes attributed to unsafe water source, in both sexes aged all ages	Deaths that are from all causes attributed to secondhand smoke, in both sexes aged all ages	...	Deaths that are from all causes attributed to non-exclusive breastfeeding, in both sexes aged all ages	Deaths that are from all causes attributed to iron deficiency, in both sexes aged all ages	Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Deaths that are from all causes attributed to low physical activity, in both sexes aged all ages	Deaths that are from all causes attributed to no access to handwashing facility, in both sexes aged all ages	Deaths that are from all causes attributed to high ldl cholesterol, in both sexes aged all ages	Population	Country name	LOCATION	Value
+0	Afghanistan	AFG	2019	36017.1700	1421.8329	10334.8660	583.02940	4582.98400	3750.705300	6061.5737	...	1762.705300	761.420300	8678.6810	4117.16900	3941.357700	19745.9880	37769496	Afghanistan	AFG	52.998
+1	Albania	ALB	2019	7609.2114	2444.6821	1519.7890	736.67175	217.15688	3.780118	773.7141	...	3.896263	0.381268	1532.4431	309.92960	8.123295	2790.6018	2873883	Albania	ALB	18.460
+2	Algeria	DZA	2019	58601.5820	1909.8331	14771.9800	1284.97340	2648.46480	276.997470	7670.4110	...	145.736360	93.949870	21613.3420	9579.85300	325.857240	27534.0210	42705372	Algeria	DZA	32.916
+5	Angola	AGO	2019	17685.7010	1288.7087	2012.9747	11905.77700	1579.26840	11143.476000	1634.3359	...	1680.036700	390.805050	5562.7783	796.06370	7009.183600	3963.9580	32353592	Angola	AGO	28.022
+7	Argentina	ARG	2019	59079.9700	7257.7563	11347.2700	20962.32000	2133.65060	315.110050	8578.1100	...	72.959810	44.992520	12590.0625	1087.60300	932.832340	22649.1760	44745516	Argentina	ARG	13.847
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+199	Venezuela	VEN	2019	43138.8160	6542.9660	5686.0720	8621.34200	2589.77470	772.601100	3752.9536	...	168.482360	63.156986	12383.9360	1220.98970	446.558840	15271.7420	28971686	Venezuela	VEN	22.215
+200	Vietnam	VNM	2019	158375.4500	32154.8000	11914.7100	52984.32400	15136.05400	1250.593800	19085.4120	...	246.177170	29.637976	37456.7100	5556.34600	2053.345000	40602.9060	95776710	Vietnam	VNM	20.195
+201	Yemen	YEM	2019	30563.7830	1240.8428	9047.8440	861.43787	3609.49660	5351.432600	4466.6990	...	1984.820000	497.770170	11281.9910	3669.95310	2198.282000	16920.5400	31546694	Yemen	YEM	44.645
+202	Zambia	ZMB	2019	10340.3240	1827.7627	872.7598	6869.73000	2055.74320	5915.021500	919.0534	...	738.964100	177.371190	2948.6475	328.96756	3975.220000	2112.2660	18380478	Zambia	ZMB	25.924
+203	Zimbabwe	ZWE	2019	12240.9870	1140.3761	1475.0681	5155.78900	1959.86610	3914.061800	1645.9760	...	630.752700	259.000200	2607.0251	344.59024	4113.118700	3571.3533	15354606	Zimbabwe	ZWE	20.847
+163 rows × 35 columns
+
+In [33]:
+df4 = pd.DataFrame(df3, columns=["Entity", "Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages", "Value", "Population"])
+df4.rename(columns={"Entity": "Country", "Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages": "PM_deaths"})
+Out[33]:	
+Country	PM_deaths	Value	Population
+0	Afghanistan	8678.6810	52.998	37769496
+1	Albania	1532.4431	18.460	2873883
+2	Algeria	21613.3420	32.916	42705372
+5	Angola	5562.7783	28.022	32353592
+7	Argentina	12590.0625	13.847	44745516
+...	...	...	...	...
+199	Venezuela	12383.9360	22.215	28971686
+200	Vietnam	37456.7100	20.195	95776710
+201	Yemen	11281.9910	44.645	31546694
+202	Zambia	2948.6475	25.924	18380478
+203	Zimbabwe	2607.0251	20.847	15354606
+163 rows × 4 columns
+
+In [34]:
+%matplotlib inline
+
+def generate_scatter(df4:pd.DataFrame, # input data (GDP data)
+                     apply_color:bool=False, # whether to color-code poulation density 
+                     regression:bool=False): # whether to apply and plot regression to our final plot
+
+
+    #####################################
+    ### 2. Extract plotting variables ###
+    #####################################
+
+    # extract country 
+    country = df4["Entity"]
+
+    # extract PM deaths 
+    PM_deaths = df4["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"]
+    
+    AQV = df4["Value"]
+
+
+    # extract population vector 
+    factor = 1000000 # divide by millions 
+    population = (df4["Population"]/factor)*2
+
+    ####################################
+    ### 3. Perform Linear Regression ###
+    ####################################
+
+    if regression: 
+        # Initialize ElasticNet model 
+        reg = ElasticNetCV(cv=5, random_state=0)
+
+        # fit life expectancy as a function of GDP 
+        X, y = np.array(PM_deaths).reshape(-1, 1), AQV
+        reg.fit(X,y) 
+
+        # produce predictions for the data 
+        y_pred = reg.predict(X) 
+
+        # arrange data for regression line 
+        reg_data = pd.DataFrame(X, columns=["X"]) 
+        reg_data["y_pred"] = y_pred 
+        reg_data = reg_data.sort_values(by="X").reset_index().drop("index", axis=1)
+        reg_data = reg_data[reg_data["y_pred"] <= 90]
+    
+    ######################## 
+    ### 3. Produce plot  ###
+    ########################
+
+    if apply_color: 
+        # create color column 
+        df4["color"] = "black"
+
+        # assign colors  
+        df4.loc[df4["Population"] >= 5000000, "color"] = "green"
+        df4.loc[df4["Population"] >= 10000000, "color"] = "blue"
+        df4.loc[df4["Population"] >= 20000000, "color"] = "yellow"
+        df4.loc[df4["Population"] >= 50000000, "color"] = "orange"
+        df4.loc[df4["Population"] >= 100000000, "color"] = "red"
+ 
+    # start plot 
+    plt.figure(figsize=(15, 8)) 
+
+    # plot with or without color 
+    if apply_color: 
+        plt.scatter(PM_deaths, AQV, s = population, c=df4["color"], alpha=0.7)
+    else: 
+        plt.scatter(PM_deaths, AQV, s = population, alpha=0.9)
+
+    # annotate points with high population 
+    df_high_pop = df4[df4["Population"] >= 100000000]
+    for row in df_high_pop.to_dict(orient="records"): 
+        # extract the country name, it's GDP and Life Expectancy values, and annotate that point with the country name
+        plt.annotate(row["Entity"], (row["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"], row["Value"]+0.3), fontsize=10)
+
+    if regression: 
+
+        # print regression line 
+        plt.plot(reg_data["X"], reg_data["y_pred"], color="black", linewidth=1, ls='--', label="Average Particulate matter deaths")
+
+    # plot configurations 
+    plt.xscale('log') 
+    plt.xlabel('PM_deaths (log scale)') 
+    plt.ylabel('Air Quality Value') 
+    plt.title('Worldwide Deaths attributed to ambient particulate matter pollution, in both sexes aged all ages vs Air Pollution Exposure (2019)',fontweight="bold")
+
+    if apply_color:
+        # add labels for colors by creating invisible points 
+        plt.plot(0, 60, color="red", linewidth=10, ls=" ", marker=".", markersize=20, label="Population >= 100M")
+        plt.plot(0, 60, color="orange", linewidth=10, ls=" ", marker=".", markersize=20, label= "50M <= Population  <=100M")
+        plt.plot(0, 60, color="yellow", linewidth=10, ls=" ", marker=".", markersize=20, label= "20M <= Population  <=50M")
+        plt.plot(0, 60, color="blue", linewidth=10, ls=" ", marker=".", markersize=20, label="10M <= Population  <=20M")
+    
+    # create legend 
+    plt.legend()
+
+    # Display the plot 
+    plt.show() 
+
+    return df4
+In [35]:
+_ = generate_scatter(df4, apply_color=True)
+
+In [36]:
+from tkinter import Tk, font
+root = Tk()
+font.families()
+Out[36]:	
+('Academy Engraved LET',
+ 'Adelle Sans Devanagari',
+ 'AkayaKanadaka',
+ 'AkayaTelivigala',
+ 'Al Bayan',
+ 'Al Nile',
+ 'Al Tarikh',
+ 'American Typewriter',
+ 'Andale Mono',
+ 'Annai MN',
+ 'Apple Braille',
+ 'Apple Chancery',
+ 'Apple Color Emoji',
+ 'Apple LiGothic',
+ 'Apple LiSung',
+ 'Apple SD Gothic Neo',
+ 'Apple Symbols',
+ 'AppleGothic',
+ 'AppleMyungjo',
+ 'Arial',
+ 'Arial Black',
+ 'Arial Hebrew',
+ 'Arial Hebrew Scholar',
+ 'Arial Narrow',
+ 'Arial Rounded MT Bold',
+ 'Arial Unicode MS',
+ 'Arima Koshi',
+ 'Arima Madurai',
+ 'Avenir',
+ 'Avenir Next',
+ 'Avenir Next Condensed',
+ 'Ayuthaya',
+ 'Baghdad',
+ 'Bai Jamjuree',
+ 'Baloo 2',
+ 'Baloo Bhai 2',
+ 'Baloo Bhaijaan',
+ 'Baloo Bhaina 2',
+ 'Baloo Chettan 2',
+ 'Baloo Da 2',
+ 'Baloo Paaji 2',
+ 'Baloo Tamma 2',
+ 'Baloo Tammudu 2',
+ 'Baloo Thambi 2',
+ 'Bangla MN',
+ 'Bangla Sangam MN',
+ 'Baoli SC',
+ 'Baoli TC',
+ 'Baskerville',
+ 'Beirut',
+ 'BiauKai',
+ 'Big Caslon',
+ 'BM Dohyeon',
+ 'BM Hanna 11yrs Old',
+ 'BM Hanna Air',
+ 'BM Hanna Pro',
+ 'BM Jua',
+ 'BM Kirang Haerang',
+ 'BM Yeonsung',
+ 'Bodoni 72',
+ 'Bodoni 72 Oldstyle',
+ 'Bodoni 72 Smallcaps',
+ 'Bodoni Ornaments',
+ 'Bradley Hand',
+ 'Brush Script MT',
+ 'Cambay Devanagari',
+ 'Chakra Petch',
+ 'Chalkboard',
+ 'Chalkboard SE',
+ 'Chalkduster',
+ 'Charm',
+ 'Charmonman',
+ 'Charter',
+ 'Cochin',
+ 'Comic Sans MS',
+ 'Copperplate',
+ 'Corsiva Hebrew',
+ 'Courier New',
+ 'Damascus',
+ 'DecoType Naskh',
+ 'Devanagari MT',
+ 'Devanagari Sangam MN',
+ 'Didot',
+ 'DIN Alternate',
+ 'DIN Condensed',
+ 'Diwan Kufi',
+ 'Diwan Thuluth',
+ 'Euphemia UCAS',
+ 'Fahkwang',
+ 'Farah',
+ 'Farisi',
+ 'Futura',
+ 'Galvji',
+ 'GB18030 Bitmap',
+ 'Geeza Pro',
+ 'Geneva',
+ 'Georgia',
+ 'Gill Sans',
+ 'Gotu',
+ 'Grantha Sangam MN',
+ 'Gujarati MT',
+ 'Gujarati Sangam MN',
+ 'GungSeo',
+ 'Gurmukhi MN',
+ 'Gurmukhi MT',
+ 'Gurmukhi Sangam MN',
+ 'Hannotate SC',
+ 'Hannotate TC',
+ 'HanziPen SC',
+ 'HanziPen TC',
+ 'HeadLineA',
+ 'Hei',
+ 'Heiti SC',
+ 'Heiti TC',
+ 'Helvetica',
+ 'Helvetica Neue',
+ 'Herculanum',
+ 'Hiragino Maru Gothic ProN',
+ 'Hiragino Mincho ProN',
+ 'Hiragino Sans',
+ 'Hiragino Sans CNS',
+ 'Hiragino Sans GB',
+ 'Hoefler Text',
+ 'Hubballi',
+ 'Impact',
+ 'InaiMathi',
+ 'ITF Devanagari',
+ 'ITF Devanagari Marathi',
+ 'Jaini',
+ 'Jaini Purva',
+ 'K2D',
+ 'Kai',
+ 'Kailasa',
+ 'Kaiti SC',
+ 'Kaiti TC',
+ 'Kannada MN',
+ 'Kannada Sangam MN',
+ 'Katari',
+ 'Kavivanar',
+ 'Kefa',
+ 'Khmer MN',
+ 'Khmer Sangam MN',
+ 'Klee',
+ 'Kodchasan',
+ 'Kohinoor Bangla',
+ 'Kohinoor Devanagari',
+ 'Kohinoor Gujarati',
+ 'Kohinoor Telugu',
+ 'KoHo',
+ 'Kokonor',
+ 'Krub',
+ 'Krungthep',
+ 'KufiStandardGK',
+ 'Lahore Gurmukhi',
+ 'Lantinghei SC',
+ 'Lantinghei TC',
+ 'Lao MN',
+ 'Lao Sangam MN',
+ 'Lava Devanagari',
+ 'Lava Kannada',
+ 'Lava Telugu',
+ 'Libian SC',
+ 'Libian TC',
+ 'LiHei Pro',
+ 'LingWai SC',
+ 'LingWai TC',
+ 'LiSong Pro',
+ 'Lucida Grande',
+ 'Luminari',
+ 'Maku',
+ 'Malayalam MN',
+ 'Malayalam Sangam MN',
+ 'Mali',
+ 'Marker Felt',
+ 'Menlo',
+ 'Microsoft Sans Serif',
+ 'Mishafi',
+ 'Mishafi Gold',
+ 'Modak',
+ 'Monaco',
+ 'Mshtakan',
+ 'Mukta',
+ 'Mukta Mahee',
+ 'Mukta Malar',
+ 'Mukta Vaani',
+ 'Muna',
+ 'Myanmar MN',
+ 'Myanmar Sangam MN',
+ 'Nadeem',
+ 'Nanum Brush Script',
+ 'Nanum Gothic',
+ 'Nanum Myeongjo',
+ 'Nanum Pen Script',
+ 'New Peninim MT',
+ 'Niramit',
+ 'Noteworthy',
+ 'Noto Nastaliq Urdu',
+ 'Noto Sans Kannada',
+ 'Noto Sans Myanmar',
+ 'Noto Sans Oriya',
+ 'Noto Serif Kannada',
+ 'Noto Serif Myanmar',
+ 'October Compressed Devanagari',
+ 'October Compressed Tamil',
+ 'October Condensed Devanagari',
+ 'October Condensed Tamil',
+ 'October Devanagari',
+ 'October Tamil',
+ 'Optima',
+ 'Oriya MN',
+ 'Oriya Sangam MN',
+ 'Osaka',
+ 'Padyakke Expanded One',
+ 'Palatino',
+ 'Papyrus',
+ 'Party LET',
+ 'PCMyungjo',
+ 'Phosphate',
+ 'PilGi',
+ 'PingFang HK',
+ 'PingFang SC',
+ 'PingFang TC',
+ 'Plantagenet Cherokee',
+ 'PSL Ornanong Pro',
+ 'PT Mono',
+ 'PT Sans',
+ 'PT Sans Caption',
+ 'PT Sans Narrow',
+ 'PT Serif',
+ 'PT Serif Caption',
+ 'Raanana',
+ 'Rockwell',
+ 'Sama Devanagari',
+ 'Sama Gujarati',
+ 'Sama Gurmukhi',
+ 'Sama Kannada',
+ 'Sama Malayalam',
+ 'Sama Tamil',
+ 'Sana',
+ 'Sarabun',
+ 'Sathu',
+ 'Savoye LET',
+ 'Shobhika',
+ 'Shree Devanagari 714',
+ 'SignPainter',
+ 'Silom',
+ 'SimSong',
+ 'Sinhala MN',
+ 'Sinhala Sangam MN',
+ 'Skia',
+ 'Snell Roundhand',
+ 'Songti SC',
+ 'Songti TC',
+ 'Srisakdi',
+ 'STFangsong',
+ 'STHeiti',
+ 'STIXGeneral',
+ 'STIXIntegralsD',
+ 'STIXIntegralsSm',
+ 'STIXIntegralsUp',
+ 'STIXIntegralsUpD',
+ 'STIXIntegralsUpSm',
+ 'STIXNonUnicode',
+ 'STIXSizeFiveSym',
+ 'STIXSizeFourSym',
+ 'STIXSizeOneSym',
+ 'STIXSizeThreeSym',
+ 'STIXSizeTwoSym',
+ 'STIXVariants',
+ 'STKaiti',
+ 'STSong',
+ 'Sukhumvit Set',
+ 'Symbol',
+ 'Tahoma',
+ 'Tamil MN',
+ 'Tamil Sangam MN',
+ 'Telugu MN',
+ 'Telugu Sangam MN',
+ 'Thonburi',
+ 'Times New Roman',
+ 'Tiro Bangla',
+ 'Tiro Devanagari Hindi',
+ 'Tiro Devanagari Marathi',
+ 'Tiro Devanagari Sanskrit',
+ 'Tiro Gurmukhi',
+ 'Tiro Kannada',
+ 'Tiro Tamil',
+ 'Tiro Telugu',
+ 'Toppan Bunkyu Gothic',
+ 'Toppan Bunkyu Midashi Gothic',
+ 'Toppan Bunkyu Midashi Mincho',
+ 'Toppan Bunkyu Mincho',
+ 'Trattatello',
+ 'Trebuchet MS',
+ 'Tsukushi A Round Gothic',
+ 'Tsukushi B Round Gothic',
+ 'Verdana',
+ 'Waseem',
+ 'Wawati SC',
+ 'Wawati TC',
+ 'Webdings',
+ 'Weibei SC',
+ 'Weibei TC',
+ 'Wingdings',
+ 'Wingdings 2',
+ 'Wingdings 3',
+ 'Xingkai SC',
+ 'Xingkai TC',
+ 'Yuanti SC',
+ 'Yuanti TC',
+ 'YuGothic',
+ 'YuKyokasho',
+ 'YuKyokasho Yoko',
+ 'YuMincho',
+ 'YuMincho +36p Kana',
+ 'Yuppy SC',
+ 'Yuppy TC',
+ 'Zapf Dingbats',
+ 'Zapfino')
+In [482]:
+pip install font-roboto 
+Requirement already satisfied: font-roboto in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (0.0.1)
+Note: you may need to restart the kernel to use updated packages.
+In [37]:
+def generate_scatter(df4:pd.DataFrame, # input data (GDP data)
+                     apply_color:bool=False, # whether to color-code poulation density 
+                     regression:bool=False): # whether to apply and plot regression to our final plot
+
+
+    #####################################
+    ### 2. Extract plotting variables ###
+    #####################################
+
+    # extract country 
+    country = df4["Entity"]
+
+    # extract PM deaths 
+    PM_deaths = df4["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"]
+    
+    AQV = df4["Value"]
+
+
+    # extract population vector 
+    factor = 1000000 # divide by millions 
+    population = (df4["Population"]/factor)*2
+
+    ####################################
+    ### 3. Perform Linear Regression ###
+    ####################################
+
+    if regression: 
+        # Initialize ElasticNet model 
+        reg = ElasticNetCV(cv=5, random_state=0)
+
+        # fit life expectancy as a function of GDP 
+        X, y = np.array(PM_deaths).reshape(-1, 1), AQV
+        reg.fit(X,y) 
+
+        # produce predictions for the data 
+        y_pred = reg.predict(X) 
+
+        # arrange data for regression line 
+        reg_data = pd.DataFrame(X, columns=["X"]) 
+        reg_data["y_pred"] = y_pred 
+        reg_data = reg_data.sort_values(by="X").reset_index().drop("index", axis=1)
+        reg_data = reg_data[reg_data["y_pred"] <= 90]
+    
+    ######################## 
+    ### 3. Produce plot  ###
+    ########################
+
+    if apply_color: 
+        # create color column 
+        df4["color"] = "#440154"
+
+        # assign colors  
+        df4.loc[df4["Population"] >= 5000000, "color"] = "#3b528b"
+        df4.loc[df4["Population"] >= 10000000, "color"] = "#21918c"
+        df4.loc[df4["Population"] >= 20000000, "color"] = "#5ec962"
+        df4.loc[df4["Population"] >= 50000000, "color"] = "#fde725"
+        df4.loc[df4["Population"] >= 100000000, "color"] = "red"
+ 
+    # start plot 
+    plt.figure(figsize=(15, 8)) 
+
+    # plot with or without color 
+    if apply_color: 
+        plt.scatter(PM_deaths, AQV, s = population, c=df4["color"], alpha=0.7)
+    else: 
+        plt.scatter(PM_deaths, AQV, s = population, alpha=0.9)
+
+    # annotate points with high population 
+    df_high_pop = df4[df4["Population"] >= 100000000]
+    for row in df_high_pop.to_dict(orient="records"): 
+        # extract the country name, it's GDP and Life Expectancy values, and annotate that point with the country name
+        plt.annotate(row["Entity"], (row["Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages"], row["Value"]+0.3), fontname='Helvetica', fontsize=10)
+
+    if regression: 
+
+        # print regression line 
+        plt.plot(reg_data["X"], reg_data["y_pred"], color="black", linewidth=1, ls='--', label="Average Particulate matter deaths")
+
+    # plot configurations
+    csfont = {'fontname':'Comic Sans MS'}
+    hfont = {'fontname':'Helvetica'}
+    plt.xscale('log') 
+    plt.xlabel('Deaths due to ambient particulate matter (log scale)', **hfont) 
+    plt.ylabel('Air Pollution (PM 2.5 - MICGRCUBM)', **hfont) 
+    plt.title('Worldwide Deaths attributed to ambient particulate matter pollution,\n in both sexes aged all ages vs Air Pollution Exposure (2019)', fontname='Georgia', fontweight="bold", fontsize =15)
+
+    if apply_color:
+        # add labels for colors by creating invisible points 
+        plt.plot(0, 60, color="red", linewidth=10, ls=" ", marker=".", markersize=20, label="Population >= 100M")
+        plt.plot(0, 60, color="#fde725", linewidth=10, ls=" ", marker=".", markersize=20, label= "50M <= Population  <=100M")
+        plt.plot(0, 60, color="#5ec962", linewidth=10, ls=" ", marker=".", markersize=20, label= "20M <= Population  <=50M")
+        plt.plot(0, 60, color="#21918c", linewidth=10, ls=" ", marker=".", markersize=20, label="10M <= Population  <=20M")
+    
+    # create legend 
+    plt.legend()
+    
+    #style
+   
+    plt.grid(False)
+    sns.despine()
+
+
+    # Display the plot 
+    plt.show() 
+
+    return df4
+with plt.style.context(matplotx.styles.nord):
+    xlim= 10^7
+    ylim= 90
+    
+    _ = generate_scatter(df4, apply_color=True)
+    
+
+In [38]:
+df4.describe()
+Out[38]:	
+Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Value	Population
+count	1.630000e+02	163.000000	1.630000e+02
+mean	2.536802e+04	29.160466	4.741310e+07
+std	1.351042e+05	18.210221	1.595161e+08
+min	1.554085e+01	5.638000	3.607870e+05
+25%	1.280931e+03	15.947500	4.902898e+06
+50%	3.302884e+03	23.367000	1.131670e+07
+75%	1.117094e+04	39.126000	3.440216e+07
+max	1.423633e+06	83.304000	1.421864e+09
+In [39]:
+data_AB = pd.read_csv("absolute-number-of-deaths-from-ambient-particulate-air-pollution.csv")
+In [40]:
+data_AB.head()
+Out[40]:	
+Entity	Code	Year	Absolute deaths from ambient PM2.5 air pollution- State of Global Air
+0	Afghanistan	AFG	1990	16200
+1	Afghanistan	AFG	1995	21300
+2	Afghanistan	AFG	2000	24900
+3	Afghanistan	AFG	2005	26500
+4	Afghanistan	AFG	2010	27600
+In [41]:
+data_AB.drop(columns=["Code"])
+Out[41]:	
+Entity	Year	Absolute deaths from ambient PM2.5 air pollution- State of Global Air
+0	Afghanistan	1990	16200
+1	Afghanistan	1995	21300
+2	Afghanistan	2000	24900
+3	Afghanistan	2005	26500
+4	Afghanistan	2010	27600
+...	...	...	...
+1039	Zimbabwe	1995	2600
+1040	Zimbabwe	2000	3600
+1041	Zimbabwe	2005	4500
+1042	Zimbabwe	2010	4500
+1043	Zimbabwe	2015	3800
+1044 rows × 3 columns
+
+In [42]:
+p = data_AB.pivot(index='Entity', columns='Year', values='Absolute deaths from ambient PM2.5 air pollution- State of Global Air')
+p
+Out[42]:	
+Year	1990	1995	2000	2005	2010	2015
+Entity						
+Afghanistan	16200.0	21300.0	24900.0	26500.0	27600.0	29500.0
+Albania	1200.0	1100.0	1000.0	1000.0	1200.0	1500.0
+Algeria	6800.0	7000.0	7600.0	8000.0	8800.0	12000.0
+Angola	8600.0	8900.0	9700.0	9000.0	9200.0	10200.0
+Argentina	13500.0	13800.0	15000.0	15400.0	16200.0	16600.0
+...	...	...	...	...	...	...
+Venezuela	5600.0	6100.0	6800.0	7100.0	7500.0	9300.0
+Vietnam	26300.0	29000.0	31900.0	35800.0	37000.0	42200.0
+Yemen	10000.0	12000.0	11200.0	10000.0	11000.0	12500.0
+Zambia	4300.0	5000.0	5500.0	5600.0	5600.0	5600.0
+Zimbabwe	2500.0	2600.0	3600.0	4500.0	4500.0	3800.0
+175 rows × 6 columns
+
+In [527]:
+pip install pandas-geojson
+Collecting pandas-geojson
+  Downloading pandas_geojson-1.2.0-py3-none-any.whl (4.6 kB)
+Requirement already satisfied: pandas in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from pandas-geojson) (1.4.3)
+Requirement already satisfied: python-dateutil>=2.8.1 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from pandas->pandas-geojson) (2.8.2)
+Requirement already satisfied: numpy>=1.18.5 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from pandas->pandas-geojson) (1.23.3)
+Requirement already satisfied: pytz>=2020.1 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from pandas->pandas-geojson) (2022.2.1)
+Requirement already satisfied: six>=1.5 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from python-dateutil>=2.8.1->pandas->pandas-geojson) (1.16.0)
+Installing collected packages: pandas-geojson
+Successfully installed pandas-geojson-1.2.0
+Note: you may need to restart the kernel to use updated packages.
+In [43]:
+import geopandas as gpd
+In [44]:
+from pandas_geojson import read_geojson
+geo_json = read_geojson('custom.geo.json')
+geo = gpd.read_file('custom.geo.json')
+In [45]:
+gpd.datasets.available
+Out[45]:	
+['naturalearth_cities', 'naturalearth_lowres', 'nybb']
+In [46]:
+print(type(geo_json))
+<class 'dict'>
+In [47]:
+import geoplot
+import geoplot.crs as gcrs
+/opt/anaconda3/envs/sds2022/lib/python3.9/site-packages/requests/__init__.py:102: RequestsDependencyWarning: urllib3 (1.26.11) or chardet (5.2.0)/charset_normalizer (2.0.12) doesn't match a supported version!
+  warnings.warn("urllib3 ({}) or chardet ({})/charset_normalizer ({}) doesn't match a supported "
+In [49]:
+geodata = gpd.GeoDataFrame.from_features(feature_coll)
+>>> geodata
+Out[49]:	
+geometry	name
+0	POLYGON ((61.21082 35.65007, 62.23065 35.27066...	Afghanistan
+1	MULTIPOLYGON (((16.32653 -5.87747, 16.57318 -6...	Angola
+2	POLYGON ((20.59025 41.85540, 20.46317 41.51509...	Albania
+3	POLYGON ((51.57952 24.24550, 51.75744 24.29407...	United Arab Emirates
+4	MULTIPOLYGON (((-65.50000 -55.20000, -66.45000...	Argentina
+...	...	...
+175	POLYGON ((35.54566 32.39399, 35.54525 31.78251...	West Bank
+176	POLYGON ((53.10857 16.65105, 52.38521 16.38241...	Yemen
+177	POLYGON ((31.52100 -29.25739, 31.32556 -29.401...	South Africa
+178	POLYGON ((32.75937 -9.23060, 33.23139 -9.67672...	Zambia
+179	POLYGON ((31.19141 -22.25151, 30.65986 -22.151...	Zimbabwe
+180 rows × 2 columns
+
+In [50]:
+df5 = pd.merge(df4,geodata,how='left',left_on='Entity',right_on='name')
+df5
+Out[50]:	
+Entity	Deaths that are from all causes attributed to ambient particulate matter pollution, in both sexes aged all ages	Value	Population	color	geometry	name
+0	Afghanistan	8678.6810	52.998	37769496	#5ec962	POLYGON ((61.21082 35.65007, 62.23065 35.27066...	Afghanistan
+1	Albania	1532.4431	18.460	2873883	#440154	POLYGON ((20.59025 41.85540, 20.46317 41.51509...	Albania
+2	Algeria	21613.3420	32.916	42705372	#5ec962	POLYGON ((11.99951 23.47167, 8.57289 21.56566,...	Algeria
+3	Angola	5562.7783	28.022	32353592	#5ec962	MULTIPOLYGON (((16.32653 -5.87747, 16.57318 -6...	Angola
+4	Argentina	12590.0625	13.847	44745516	#5ec962	MULTIPOLYGON (((-65.50000 -55.20000, -66.45000...	Argentina
+...	...	...	...	...	...	...	...
+158	Venezuela	12383.9360	22.215	28971686	#5ec962	POLYGON ((-71.33158 11.77628, -71.36001 11.539...	Venezuela
+159	Vietnam	37456.7100	20.195	95776710	#fde725	POLYGON ((108.05018 21.55238, 106.71507 20.696...	Vietnam
+160	Yemen	11281.9910	44.645	31546694	#5ec962	POLYGON ((53.10857 16.65105, 52.38521 16.38241...	Yemen
+161	Zambia	2948.6475	25.924	18380478	#21918c	POLYGON ((32.75937 -9.23060, 33.23139 -9.67672...	Zambia
+162	Zimbabwe	2607.0251	20.847	15354606	#21918c	POLYGON ((31.19141 -22.25151, 30.65986 -22.151...	Zimbabwe
+163 rows × 7 columns
+
+In [51]:
+geodata.plot()
+Out[51]:	
+<AxesSubplot:>
+
+In [52]:
+geodata['coords'] = geodata['geometry'].apply(lambda x: x. representative_point().coords[:])
+geodata['coords'] = [coords[0] for coords in geodata['coords']]
+In [53]:
+ax = geodata.plot(figsize = (15, 12), color = "lemonchiffon", edgecolor = "lightgrey", linewidth = 0.5)
+geodata.apply(lambda x: ax.annotate(text=x['name'], xy=x.geometry.centroid. coords[0], ha='center'), axis=1);
+
+In [377]:
+wind = pd.read_csv("wind.csv")
+wind
+Out[377]:	
+Country	Listed capacity	Entries	Prices
+0	World	2053.9 GW	39222	€1250.00
+1	Offshore	1162.2 GW	1715	€200.00
+2	Africa	16.2 GW	151	€75.00
+3	Americas	476.8 GW	4075	€400.00
+4	Asia	715.9 GW	8327	€400.00
+5	Europe	727.7 GW	26385	€800.00
+6	Oceania	117.2 GW	284	€100.00
+7	Argentina	4138 MW	88	€50.00
+8	Australia	103056 MW	210	€60.00
+9	Austria	3492 MW	330	€95.00
+10	Belgium	5239 MW	455	€130.00
+11	Brazil	195001 MW	1053	€315.00
+12	Bulgaria	768 MW	82	€50.00
+13	Canada	36536 MW	385	€115.00
+14	Chile	5747 MW	79	€50.00
+15	China	396912 MW	5492	€350.00
+16	Czech Republic	342 MW	97	€50.00
+17	Denmark	35699 MW	3377	€350.00
+18	Estonia	27073 MW	74	€50.00
+19	Finland	33622 MW	307	€80.00
+20	France	27586 MW	1884	€350.00
+21	Germany	81381 MW	11631	€350.00
+22	Greece	4743 MW	332	€100.00
+23	Hungary	384 MW	48	€50.00
+24	India	45805 MW	1167	€350.00
+25	Ireland	75115 MW	377	€115.00
+26	Italy	91450 MW	799	€240.00
+27	Japan	69393 MW	539	€155.00
+28	Lithuania	2560 MW	91	€50.00
+29	Mexico	9029 MW	93	€50.00
+30	Netherlands	13178 MW	1004	€235.00
+31	Norway	8210 MW	107	€50.00
+32	Poland	18162 MW	425	€125.00
+33	Portugal	10642 MW	455	€130.00
+34	Romania	5469 MW	90	€50.00
+35	Russia	2569 MW	45	€50.00
+36	South Africa	3700 MW	44	€50.00
+37	South Korea	54360 MW	220	€65.00
+38	Spain	48037 MW	1476	€350.00
+39	Sweden	108915 MW	1338	€350.00
+40	Taiwan	68078 MW	129	€50.00
+41	Turkey	11353 MW	388	€115.00
+42	Ukraine	2308 MW	62	€50.00
+43	United Kingdom	113542 MW	1364	€350.00
+44	Uruguay	1645 MW	55	€50.00
+45	United States of America	212055 MW	2201	€350.00
+46	Vietnam	59244 MW	171	€50.00
+In [378]:
+merged = pd.merge(wind, geodata, how='left', left_on= "Country", right_on="name")
+merged
+Out[378]:	
+Country	Listed capacity	Entries	Prices	geometry	name	coords
+0	World	2053.9 GW	39222	€1250.00	None	NaN	NaN
+1	Offshore	1162.2 GW	1715	€200.00	None	NaN	NaN
+2	Africa	16.2 GW	151	€75.00	None	NaN	NaN
+3	Americas	476.8 GW	4075	€400.00	None	NaN	NaN
+4	Asia	715.9 GW	8327	€400.00	None	NaN	NaN
+5	Europe	727.7 GW	26385	€800.00	None	NaN	NaN
+6	Oceania	117.2 GW	284	€100.00	None	NaN	NaN
+7	Argentina	4138 MW	88	€50.00	MULTIPOLYGON (((-65.50000 -55.20000, -66.45000...	Argentina	(-64.08055141174417, -37.2391995)
+8	Australia	103056 MW	210	€60.00	MULTIPOLYGON (((145.39798 -40.79255, 146.36412...	Australia	(133.05858120482662, -24.841455)
+9	Austria	3492 MW	330	€95.00	POLYGON ((16.97967 48.12350, 16.90375 47.71487...	Austria	(14.953149833502414, 47.9191815)
+10	Belgium	5239 MW	455	€130.00	POLYGON ((3.31497 51.34578, 4.04707 51.26726, ...	Belgium	(4.737356308041732, 50.5796775)
+11	Brazil	195001 MW	1053	€315.00	POLYGON ((-57.62513 -30.21629, -56.29090 -28.8...	Brazil	(-49.71162185852424, -14.0736885)
+12	Bulgaria	768 MW	82	€50.00	POLYGON ((22.65715 44.23492, 22.94483 43.82379...	Bulgaria	(25.138533279202548, 42.739419999999996)
+13	Canada	36536 MW	385	€115.00	MULTIPOLYGON (((-63.66450 46.55001, -62.93930 ...	Canada	(-110.24380777716146, 56.70192)
+14	Chile	5747 MW	79	€50.00	MULTIPOLYGON (((-68.63401 -52.63637, -68.63335...	Chile	(-69.83780456667986, -54.015925)
+15	China	396912 MW	5492	€350.00	MULTIPOLYGON (((110.33919 18.67839, 109.47521 ...	China	(98.76958324319138, 36.79871)
+16	Czech Republic	342 MW	97	€50.00	POLYGON ((16.96029 48.59698, 16.49928 48.78581...	Czech Republic	(15.538166373823362, 49.758268)
+17	Denmark	35699 MW	3377	€350.00	MULTIPOLYGON (((12.69001 55.60999, 12.08999 54...	Denmark	(9.460777051985307, 56.324314)
+18	Estonia	27073 MW	74	€50.00	POLYGON ((24.31286 57.79342, 24.42893 58.38341...	Estonia	(25.561756816294846, 58.498082999999994)
+19	Finland	33622 MW	307	€80.00	POLYGON ((28.59193 69.06478, 28.44594 68.36461...	Finland	(27.373290514430508, 65.0300495)
+20	France	27586 MW	1884	€350.00	MULTIPOLYGON (((9.56002 42.15249, 9.22975 41.3...	France	(2.099228368479555, 46.895071)
+21	Germany	81381 MW	11631	€350.00	POLYGON ((9.92191 54.98310, 9.93958 54.59664, ...	Germany	(10.432350876756606, 51.431228000000004)
+22	Greece	4743 MW	332	€100.00	MULTIPOLYGON (((23.69998 35.70500, 24.24667 35...	Greece	(21.806331463138974, 39.080456999999996)
+23	Hungary	384 MW	48	€50.00	POLYGON ((16.20230 46.85239, 16.53427 47.49617...	Hungary	(19.103248635963975, 47.2452045)
+24	India	45805 MW	1167	€350.00	POLYGON ((77.83745 35.49401, 78.91227 34.32194...	India	(79.17905943652184, 21.8722055)
+25	Ireland	75115 MW	377	€115.00	POLYGON ((-6.19789 53.86756, -6.03299 53.15316...	Ireland	(-7.806698934039285, 53.510364499999994)
+26	Italy	91450 MW	799	€240.00	MULTIPOLYGON (((15.52038 38.23116, 15.16024 37...	Italy	(12.631183538666289, 42.5582165)
+27	Japan	69393 MW	539	€155.00	MULTIPOLYGON (((134.63843 34.14923, 134.76638 ...	Japan	(138.34886710119753, 36.09343)
+28	Lithuania	2560 MW	91	€50.00	POLYGON ((22.73110 54.32754, 22.65105 54.58274...	Lithuania	(24.127801376037468, 55.0912375)
+29	Mexico	9029 MW	93	€50.00	POLYGON ((-97.14001 25.87000, -97.52807 24.992...	Mexico	(-102.25017233870508, 23.5993735)
+30	Netherlands	13178 MW	1004	€235.00	POLYGON ((6.07418 53.51040, 6.90514 53.48216, ...	Netherlands	(5.39811344311906, 52.0402345)
+31	Norway	8210 MW	107	€50.00	MULTIPOLYGON (((28.16555 71.18547, 31.29342 70...	Norway	(22.682486147218057, 79.958143)
+32	Poland	18162 MW	425	€125.00	POLYGON ((15.01700 51.10667, 14.60710 51.74519...	Poland	(19.07626726679996, 51.8844175)
+33	Portugal	10642 MW	455	€130.00	POLYGON ((-9.03482 41.88057, -8.67195 42.13469...	Portugal	(-8.36792599099319, 39.5108185)
+34	Romania	5469 MW	90	€50.00	POLYGON ((22.71053 47.88219, 23.14224 48.09634...	Romania	(24.211692276700624, 46.0360275)
+35	Russia	2569 MW	45	€50.00	MULTIPOLYGON (((143.64801 50.74760, 144.65415 ...	Russia	(88.59732843667405, 59.40587)
+36	South Africa	3700 MW	44	€50.00	POLYGON ((31.52100 -29.25739, 31.32556 -29.401...	South Africa	(26.14762704403642, -28.408524)
+37	South Korea	54360 MW	220	€65.00	POLYGON ((128.34972 38.61224, 129.21292 37.432...	South Korea	(127.90135649426065, 36.205013)
+38	Spain	48037 MW	1476	€350.00	POLYGON ((-9.03482 41.88057, -8.98443 42.59278...	Spain	(-3.5199677746850035, 39.917913)
+39	Sweden	108915 MW	1338	€350.00	MULTIPOLYGON (((22.18317 65.72374, 21.21352 65...	Sweden	(14.786243183258216, 62.274881)
+40	Taiwan	68078 MW	129	€50.00	POLYGON ((121.77782 24.39427, 121.17563 22.790...	Taiwan	(120.98884812863193, 23.9752685)
+41	Turkey	11353 MW	388	€115.00	MULTIPOLYGON (((36.91313 41.33536, 38.34766 40...	Turkey	(35.454930892256485, 38.6335205)
+42	Ukraine	2308 MW	62	€50.00	POLYGON ((31.78600 52.10168, 32.15941 52.06127...	Ukraine	(33.89278067628836, 48.300308)
+43	United Kingdom	113542 MW	1364	€350.00	MULTIPOLYGON (((-5.66195 54.55460, -6.19789 53...	United Kingdom	(-1.7533123060747915, 54.224688)
+44	Uruguay	1645 MW	55	€50.00	POLYGON ((-57.62513 -30.21629, -56.97603 -30.1...	Uruguay	(-55.818919527663155, -32.387454500000004)
+45	United States of America	212055 MW	2201	€350.00	MULTIPOLYGON (((-155.54211 19.08348, -155.6881...	United States of America	(-99.31483211377508, 37.236745)
+46	Vietnam	59244 MW	171	€50.00	POLYGON ((108.05018 21.55238, 106.71507 20.696...	Vietnam	(107.77693434146269, 15.99414)
+In [379]:
+merged.drop(merged.index[:7], inplace=True)
+merged
+Out[379]:	
+Country	Listed capacity	Entries	Prices	geometry	name	coords
+7	Argentina	4138 MW	88	€50.00	MULTIPOLYGON (((-65.50000 -55.20000, -66.45000...	Argentina	(-64.08055141174417, -37.2391995)
+8	Australia	103056 MW	210	€60.00	MULTIPOLYGON (((145.39798 -40.79255, 146.36412...	Australia	(133.05858120482662, -24.841455)
+9	Austria	3492 MW	330	€95.00	POLYGON ((16.97967 48.12350, 16.90375 47.71487...	Austria	(14.953149833502414, 47.9191815)
+10	Belgium	5239 MW	455	€130.00	POLYGON ((3.31497 51.34578, 4.04707 51.26726, ...	Belgium	(4.737356308041732, 50.5796775)
+11	Brazil	195001 MW	1053	€315.00	POLYGON ((-57.62513 -30.21629, -56.29090 -28.8...	Brazil	(-49.71162185852424, -14.0736885)
+12	Bulgaria	768 MW	82	€50.00	POLYGON ((22.65715 44.23492, 22.94483 43.82379...	Bulgaria	(25.138533279202548, 42.739419999999996)
+13	Canada	36536 MW	385	€115.00	MULTIPOLYGON (((-63.66450 46.55001, -62.93930 ...	Canada	(-110.24380777716146, 56.70192)
+14	Chile	5747 MW	79	€50.00	MULTIPOLYGON (((-68.63401 -52.63637, -68.63335...	Chile	(-69.83780456667986, -54.015925)
+15	China	396912 MW	5492	€350.00	MULTIPOLYGON (((110.33919 18.67839, 109.47521 ...	China	(98.76958324319138, 36.79871)
+16	Czech Republic	342 MW	97	€50.00	POLYGON ((16.96029 48.59698, 16.49928 48.78581...	Czech Republic	(15.538166373823362, 49.758268)
+17	Denmark	35699 MW	3377	€350.00	MULTIPOLYGON (((12.69001 55.60999, 12.08999 54...	Denmark	(9.460777051985307, 56.324314)
+18	Estonia	27073 MW	74	€50.00	POLYGON ((24.31286 57.79342, 24.42893 58.38341...	Estonia	(25.561756816294846, 58.498082999999994)
+19	Finland	33622 MW	307	€80.00	POLYGON ((28.59193 69.06478, 28.44594 68.36461...	Finland	(27.373290514430508, 65.0300495)
+20	France	27586 MW	1884	€350.00	MULTIPOLYGON (((9.56002 42.15249, 9.22975 41.3...	France	(2.099228368479555, 46.895071)
+21	Germany	81381 MW	11631	€350.00	POLYGON ((9.92191 54.98310, 9.93958 54.59664, ...	Germany	(10.432350876756606, 51.431228000000004)
+22	Greece	4743 MW	332	€100.00	MULTIPOLYGON (((23.69998 35.70500, 24.24667 35...	Greece	(21.806331463138974, 39.080456999999996)
+23	Hungary	384 MW	48	€50.00	POLYGON ((16.20230 46.85239, 16.53427 47.49617...	Hungary	(19.103248635963975, 47.2452045)
+24	India	45805 MW	1167	€350.00	POLYGON ((77.83745 35.49401, 78.91227 34.32194...	India	(79.17905943652184, 21.8722055)
+25	Ireland	75115 MW	377	€115.00	POLYGON ((-6.19789 53.86756, -6.03299 53.15316...	Ireland	(-7.806698934039285, 53.510364499999994)
+26	Italy	91450 MW	799	€240.00	MULTIPOLYGON (((15.52038 38.23116, 15.16024 37...	Italy	(12.631183538666289, 42.5582165)
+27	Japan	69393 MW	539	€155.00	MULTIPOLYGON (((134.63843 34.14923, 134.76638 ...	Japan	(138.34886710119753, 36.09343)
+28	Lithuania	2560 MW	91	€50.00	POLYGON ((22.73110 54.32754, 22.65105 54.58274...	Lithuania	(24.127801376037468, 55.0912375)
+29	Mexico	9029 MW	93	€50.00	POLYGON ((-97.14001 25.87000, -97.52807 24.992...	Mexico	(-102.25017233870508, 23.5993735)
+30	Netherlands	13178 MW	1004	€235.00	POLYGON ((6.07418 53.51040, 6.90514 53.48216, ...	Netherlands	(5.39811344311906, 52.0402345)
+31	Norway	8210 MW	107	€50.00	MULTIPOLYGON (((28.16555 71.18547, 31.29342 70...	Norway	(22.682486147218057, 79.958143)
+32	Poland	18162 MW	425	€125.00	POLYGON ((15.01700 51.10667, 14.60710 51.74519...	Poland	(19.07626726679996, 51.8844175)
+33	Portugal	10642 MW	455	€130.00	POLYGON ((-9.03482 41.88057, -8.67195 42.13469...	Portugal	(-8.36792599099319, 39.5108185)
+34	Romania	5469 MW	90	€50.00	POLYGON ((22.71053 47.88219, 23.14224 48.09634...	Romania	(24.211692276700624, 46.0360275)
+35	Russia	2569 MW	45	€50.00	MULTIPOLYGON (((143.64801 50.74760, 144.65415 ...	Russia	(88.59732843667405, 59.40587)
+36	South Africa	3700 MW	44	€50.00	POLYGON ((31.52100 -29.25739, 31.32556 -29.401...	South Africa	(26.14762704403642, -28.408524)
+37	South Korea	54360 MW	220	€65.00	POLYGON ((128.34972 38.61224, 129.21292 37.432...	South Korea	(127.90135649426065, 36.205013)
+38	Spain	48037 MW	1476	€350.00	POLYGON ((-9.03482 41.88057, -8.98443 42.59278...	Spain	(-3.5199677746850035, 39.917913)
+39	Sweden	108915 MW	1338	€350.00	MULTIPOLYGON (((22.18317 65.72374, 21.21352 65...	Sweden	(14.786243183258216, 62.274881)
+40	Taiwan	68078 MW	129	€50.00	POLYGON ((121.77782 24.39427, 121.17563 22.790...	Taiwan	(120.98884812863193, 23.9752685)
+41	Turkey	11353 MW	388	€115.00	MULTIPOLYGON (((36.91313 41.33536, 38.34766 40...	Turkey	(35.454930892256485, 38.6335205)
+42	Ukraine	2308 MW	62	€50.00	POLYGON ((31.78600 52.10168, 32.15941 52.06127...	Ukraine	(33.89278067628836, 48.300308)
+43	United Kingdom	113542 MW	1364	€350.00	MULTIPOLYGON (((-5.66195 54.55460, -6.19789 53...	United Kingdom	(-1.7533123060747915, 54.224688)
+44	Uruguay	1645 MW	55	€50.00	POLYGON ((-57.62513 -30.21629, -56.97603 -30.1...	Uruguay	(-55.818919527663155, -32.387454500000004)
+45	United States of America	212055 MW	2201	€350.00	MULTIPOLYGON (((-155.54211 19.08348, -155.6881...	United States of America	(-99.31483211377508, 37.236745)
+46	Vietnam	59244 MW	171	€50.00	POLYGON ((108.05018 21.55238, 106.71507 20.696...	Vietnam	(107.77693434146269, 15.99414)
+In [380]:
+datatypes = merged.dtypes 
+  
+# Print the data types 
+# of each column 
+datatypes
+Out[380]:	
+Country              object
+Listed capacity      object
+Entries               int64
+Prices               object
+geometry           geometry
+name                 object
+coords               object
+dtype: object
+In [381]:
+merged
+Out[381]:	
+Country	Listed capacity	Entries	Prices	geometry	name	coords
+7	Argentina	4138 MW	88	€50.00	MULTIPOLYGON (((-65.50000 -55.20000, -66.45000...	Argentina	(-64.08055141174417, -37.2391995)
+8	Australia	103056 MW	210	€60.00	MULTIPOLYGON (((145.39798 -40.79255, 146.36412...	Australia	(133.05858120482662, -24.841455)
+9	Austria	3492 MW	330	€95.00	POLYGON ((16.97967 48.12350, 16.90375 47.71487...	Austria	(14.953149833502414, 47.9191815)
+10	Belgium	5239 MW	455	€130.00	POLYGON ((3.31497 51.34578, 4.04707 51.26726, ...	Belgium	(4.737356308041732, 50.5796775)
+11	Brazil	195001 MW	1053	€315.00	POLYGON ((-57.62513 -30.21629, -56.29090 -28.8...	Brazil	(-49.71162185852424, -14.0736885)
+12	Bulgaria	768 MW	82	€50.00	POLYGON ((22.65715 44.23492, 22.94483 43.82379...	Bulgaria	(25.138533279202548, 42.739419999999996)
+13	Canada	36536 MW	385	€115.00	MULTIPOLYGON (((-63.66450 46.55001, -62.93930 ...	Canada	(-110.24380777716146, 56.70192)
+14	Chile	5747 MW	79	€50.00	MULTIPOLYGON (((-68.63401 -52.63637, -68.63335...	Chile	(-69.83780456667986, -54.015925)
+15	China	396912 MW	5492	€350.00	MULTIPOLYGON (((110.33919 18.67839, 109.47521 ...	China	(98.76958324319138, 36.79871)
+16	Czech Republic	342 MW	97	€50.00	POLYGON ((16.96029 48.59698, 16.49928 48.78581...	Czech Republic	(15.538166373823362, 49.758268)
+17	Denmark	35699 MW	3377	€350.00	MULTIPOLYGON (((12.69001 55.60999, 12.08999 54...	Denmark	(9.460777051985307, 56.324314)
+18	Estonia	27073 MW	74	€50.00	POLYGON ((24.31286 57.79342, 24.42893 58.38341...	Estonia	(25.561756816294846, 58.498082999999994)
+19	Finland	33622 MW	307	€80.00	POLYGON ((28.59193 69.06478, 28.44594 68.36461...	Finland	(27.373290514430508, 65.0300495)
+20	France	27586 MW	1884	€350.00	MULTIPOLYGON (((9.56002 42.15249, 9.22975 41.3...	France	(2.099228368479555, 46.895071)
+21	Germany	81381 MW	11631	€350.00	POLYGON ((9.92191 54.98310, 9.93958 54.59664, ...	Germany	(10.432350876756606, 51.431228000000004)
+22	Greece	4743 MW	332	€100.00	MULTIPOLYGON (((23.69998 35.70500, 24.24667 35...	Greece	(21.806331463138974, 39.080456999999996)
+23	Hungary	384 MW	48	€50.00	POLYGON ((16.20230 46.85239, 16.53427 47.49617...	Hungary	(19.103248635963975, 47.2452045)
+24	India	45805 MW	1167	€350.00	POLYGON ((77.83745 35.49401, 78.91227 34.32194...	India	(79.17905943652184, 21.8722055)
+25	Ireland	75115 MW	377	€115.00	POLYGON ((-6.19789 53.86756, -6.03299 53.15316...	Ireland	(-7.806698934039285, 53.510364499999994)
+26	Italy	91450 MW	799	€240.00	MULTIPOLYGON (((15.52038 38.23116, 15.16024 37...	Italy	(12.631183538666289, 42.5582165)
+27	Japan	69393 MW	539	€155.00	MULTIPOLYGON (((134.63843 34.14923, 134.76638 ...	Japan	(138.34886710119753, 36.09343)
+28	Lithuania	2560 MW	91	€50.00	POLYGON ((22.73110 54.32754, 22.65105 54.58274...	Lithuania	(24.127801376037468, 55.0912375)
+29	Mexico	9029 MW	93	€50.00	POLYGON ((-97.14001 25.87000, -97.52807 24.992...	Mexico	(-102.25017233870508, 23.5993735)
+30	Netherlands	13178 MW	1004	€235.00	POLYGON ((6.07418 53.51040, 6.90514 53.48216, ...	Netherlands	(5.39811344311906, 52.0402345)
+31	Norway	8210 MW	107	€50.00	MULTIPOLYGON (((28.16555 71.18547, 31.29342 70...	Norway	(22.682486147218057, 79.958143)
+32	Poland	18162 MW	425	€125.00	POLYGON ((15.01700 51.10667, 14.60710 51.74519...	Poland	(19.07626726679996, 51.8844175)
+33	Portugal	10642 MW	455	€130.00	POLYGON ((-9.03482 41.88057, -8.67195 42.13469...	Portugal	(-8.36792599099319, 39.5108185)
+34	Romania	5469 MW	90	€50.00	POLYGON ((22.71053 47.88219, 23.14224 48.09634...	Romania	(24.211692276700624, 46.0360275)
+35	Russia	2569 MW	45	€50.00	MULTIPOLYGON (((143.64801 50.74760, 144.65415 ...	Russia	(88.59732843667405, 59.40587)
+36	South Africa	3700 MW	44	€50.00	POLYGON ((31.52100 -29.25739, 31.32556 -29.401...	South Africa	(26.14762704403642, -28.408524)
+37	South Korea	54360 MW	220	€65.00	POLYGON ((128.34972 38.61224, 129.21292 37.432...	South Korea	(127.90135649426065, 36.205013)
+38	Spain	48037 MW	1476	€350.00	POLYGON ((-9.03482 41.88057, -8.98443 42.59278...	Spain	(-3.5199677746850035, 39.917913)
+39	Sweden	108915 MW	1338	€350.00	MULTIPOLYGON (((22.18317 65.72374, 21.21352 65...	Sweden	(14.786243183258216, 62.274881)
+40	Taiwan	68078 MW	129	€50.00	POLYGON ((121.77782 24.39427, 121.17563 22.790...	Taiwan	(120.98884812863193, 23.9752685)
+41	Turkey	11353 MW	388	€115.00	MULTIPOLYGON (((36.91313 41.33536, 38.34766 40...	Turkey	(35.454930892256485, 38.6335205)
+42	Ukraine	2308 MW	62	€50.00	POLYGON ((31.78600 52.10168, 32.15941 52.06127...	Ukraine	(33.89278067628836, 48.300308)
+43	United Kingdom	113542 MW	1364	€350.00	MULTIPOLYGON (((-5.66195 54.55460, -6.19789 53...	United Kingdom	(-1.7533123060747915, 54.224688)
+44	Uruguay	1645 MW	55	€50.00	POLYGON ((-57.62513 -30.21629, -56.97603 -30.1...	Uruguay	(-55.818919527663155, -32.387454500000004)
+45	United States of America	212055 MW	2201	€350.00	MULTIPOLYGON (((-155.54211 19.08348, -155.6881...	United States of America	(-99.31483211377508, 37.236745)
+46	Vietnam	59244 MW	171	€50.00	POLYGON ((108.05018 21.55238, 106.71507 20.696...	Vietnam	(107.77693434146269, 15.99414)
+In [382]:
+merged['coords'] = merged['coords'].astype(str)
+In [383]:
+merged = merged.coords.str.strip("()").str.split(", ")
+merged = merged.apply(pd.Series).astype(float).rename(columns={0: "lng", 1: "lat"})
+In [384]:
+wind2 = wind.join(merged, lsuffix='_caller', rsuffix='_other')
+In [385]:
+wind2.drop(wind2.index[:7], inplace=True)
+wind2
+Out[385]:	
+Country	Listed capacity	Entries	Prices	lng	lat
+7	Argentina	4138 MW	88	€50.00	-64.080551	-37.239199
+8	Australia	103056 MW	210	€60.00	133.058581	-24.841455
+9	Austria	3492 MW	330	€95.00	14.953150	47.919182
+10	Belgium	5239 MW	455	€130.00	4.737356	50.579678
+11	Brazil	195001 MW	1053	€315.00	-49.711622	-14.073688
+12	Bulgaria	768 MW	82	€50.00	25.138533	42.739420
+13	Canada	36536 MW	385	€115.00	-110.243808	56.701920
+14	Chile	5747 MW	79	€50.00	-69.837805	-54.015925
+15	China	396912 MW	5492	€350.00	98.769583	36.798710
+16	Czech Republic	342 MW	97	€50.00	15.538166	49.758268
+17	Denmark	35699 MW	3377	€350.00	9.460777	56.324314
+18	Estonia	27073 MW	74	€50.00	25.561757	58.498083
+19	Finland	33622 MW	307	€80.00	27.373291	65.030050
+20	France	27586 MW	1884	€350.00	2.099228	46.895071
+21	Germany	81381 MW	11631	€350.00	10.432351	51.431228
+22	Greece	4743 MW	332	€100.00	21.806331	39.080457
+23	Hungary	384 MW	48	€50.00	19.103249	47.245204
+24	India	45805 MW	1167	€350.00	79.179059	21.872205
+25	Ireland	75115 MW	377	€115.00	-7.806699	53.510364
+26	Italy	91450 MW	799	€240.00	12.631184	42.558217
+27	Japan	69393 MW	539	€155.00	138.348867	36.093430
+28	Lithuania	2560 MW	91	€50.00	24.127801	55.091237
+29	Mexico	9029 MW	93	€50.00	-102.250172	23.599373
+30	Netherlands	13178 MW	1004	€235.00	5.398113	52.040234
+31	Norway	8210 MW	107	€50.00	22.682486	79.958143
+32	Poland	18162 MW	425	€125.00	19.076267	51.884417
+33	Portugal	10642 MW	455	€130.00	-8.367926	39.510818
+34	Romania	5469 MW	90	€50.00	24.211692	46.036028
+35	Russia	2569 MW	45	€50.00	88.597328	59.405870
+36	South Africa	3700 MW	44	€50.00	26.147627	-28.408524
+37	South Korea	54360 MW	220	€65.00	127.901356	36.205013
+38	Spain	48037 MW	1476	€350.00	-3.519968	39.917913
+39	Sweden	108915 MW	1338	€350.00	14.786243	62.274881
+40	Taiwan	68078 MW	129	€50.00	120.988848	23.975268
+41	Turkey	11353 MW	388	€115.00	35.454931	38.633521
+42	Ukraine	2308 MW	62	€50.00	33.892781	48.300308
+43	United Kingdom	113542 MW	1364	€350.00	-1.753312	54.224688
+44	Uruguay	1645 MW	55	€50.00	-55.818920	-32.387455
+45	United States of America	212055 MW	2201	€350.00	-99.314832	37.236745
+46	Vietnam	59244 MW	171	€50.00	107.776934	15.994140
+In [264]:
+conda install geodatasets -c conda-forge
+Collecting package metadata (current_repodata.json): | ^C
+\ 
+Note: you may need to restart the kernel to use updated packages.
+In [265]:
+pip install -U pip
+Requirement already satisfied: pip in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (23.3.1)
+Note: you may need to restart the kernel to use updated packages.
+In [266]:
+!pip install geopy
+
+    
+import folium
+from folium.plugins import HeatMap
+Requirement already satisfied: geopy in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (2.2.0)
+Requirement already satisfied: geographiclib<2,>=1.49 in /opt/anaconda3/envs/sds2022/lib/python3.9/site-packages (from geopy) (1.52)
+In [386]:
+world_map= folium.Map(tiles="cartodbpositron")
+marker_cluster = MarkerCluster().add_to(world_map)
+#for each coordinate, create circlemarker of user percent
+for i in range(len(wind2)):
+        lat = wind2.iloc[i]['lat']
+        long = wind2.iloc[i]['lng']
+        radius=5
+        popup_text = """Country : {}<br>
+                    Entries : {}<br>"""
+        popup_text = popup_text.format(wind2.iloc[i]['Country'],
+                                   wind2.iloc[i]['Entries']
+                                   )
+
+
+        folium.CircleMarker(location = [lat, long], radius=radius, popup= popup_text, fill =True).add_to(marker_cluster)
+#show the map
+world_map
+Out[386]:	
+Make this Notebook Trusted to load map: File -> Trust Notebook
+In [387]:
+url = 'https://raw.githubusercontent.com/python-visualization/folium/master/examples/data'
+country_shapes = f'{url}/world-countries.json'
+In [388]:
+world_map= folium.Map(tiles="cartodbpositron")
+marker_cluster = MarkerCluster().add_to(world_map)
+#for each coordinate, create circlemarker of user percent
+for i in range(len(wind2)):
+        lat = wind2.iloc[i]['lat']
+        long = wind2.iloc[i]['lng']
+        radius=5
+        popup_text = """Country : {}<br>
+                    Entries : {}<br>"""
+        popup_text = popup_text.format(wind2.iloc[i]['Country'],
+                                   wind2.iloc[i]['Entries']
+                                   )
+
+
+        folium.CircleMarker(location = [lat, long], radius=radius, popup= popup_text, fill =True).add_to(marker_cluster)
+#show the map
+world_map
+Out[388]:	
+Make this Notebook Trusted to load map: File -> Trust Notebook
+In [389]:
+wind2['Prices'] = wind2['Prices'].str[1:]
+
+wind2
+Out[389]:	
+Country	Listed capacity	Entries	Prices	lng	lat
+7	Argentina	4138 MW	88	50.00	-64.080551	-37.239199
+8	Australia	103056 MW	210	60.00	133.058581	-24.841455
+9	Austria	3492 MW	330	95.00	14.953150	47.919182
+10	Belgium	5239 MW	455	130.00	4.737356	50.579678
+11	Brazil	195001 MW	1053	315.00	-49.711622	-14.073688
+12	Bulgaria	768 MW	82	50.00	25.138533	42.739420
+13	Canada	36536 MW	385	115.00	-110.243808	56.701920
+14	Chile	5747 MW	79	50.00	-69.837805	-54.015925
+15	China	396912 MW	5492	350.00	98.769583	36.798710
+16	Czech Republic	342 MW	97	50.00	15.538166	49.758268
+17	Denmark	35699 MW	3377	350.00	9.460777	56.324314
+18	Estonia	27073 MW	74	50.00	25.561757	58.498083
+19	Finland	33622 MW	307	80.00	27.373291	65.030050
+20	France	27586 MW	1884	350.00	2.099228	46.895071
+21	Germany	81381 MW	11631	350.00	10.432351	51.431228
+22	Greece	4743 MW	332	100.00	21.806331	39.080457
+23	Hungary	384 MW	48	50.00	19.103249	47.245204
+24	India	45805 MW	1167	350.00	79.179059	21.872205
+25	Ireland	75115 MW	377	115.00	-7.806699	53.510364
+26	Italy	91450 MW	799	240.00	12.631184	42.558217
+27	Japan	69393 MW	539	155.00	138.348867	36.093430
+28	Lithuania	2560 MW	91	50.00	24.127801	55.091237
+29	Mexico	9029 MW	93	50.00	-102.250172	23.599373
+30	Netherlands	13178 MW	1004	235.00	5.398113	52.040234
+31	Norway	8210 MW	107	50.00	22.682486	79.958143
+32	Poland	18162 MW	425	125.00	19.076267	51.884417
+33	Portugal	10642 MW	455	130.00	-8.367926	39.510818
+34	Romania	5469 MW	90	50.00	24.211692	46.036028
+35	Russia	2569 MW	45	50.00	88.597328	59.405870
+36	South Africa	3700 MW	44	50.00	26.147627	-28.408524
+37	South Korea	54360 MW	220	65.00	127.901356	36.205013
+38	Spain	48037 MW	1476	350.00	-3.519968	39.917913
+39	Sweden	108915 MW	1338	350.00	14.786243	62.274881
+40	Taiwan	68078 MW	129	50.00	120.988848	23.975268
+41	Turkey	11353 MW	388	115.00	35.454931	38.633521
+42	Ukraine	2308 MW	62	50.00	33.892781	48.300308
+43	United Kingdom	113542 MW	1364	350.00	-1.753312	54.224688
+44	Uruguay	1645 MW	55	50.00	-55.818920	-32.387455
+45	United States of America	212055 MW	2201	350.00	-99.314832	37.236745
+46	Vietnam	59244 MW	171	50.00	107.776934	15.994140
+In [391]:
+wind2['Listed capacity'] = wind2['Listed capacity'].apply(lambda x : str(x).replace("MW",""))
+wind2['Listed capacity'].astype(str).astype(int)
+Out[391]:	
+7       4138
+8     103056
+9       3492
+10      5239
+11    195001
+12       768
+13     36536
+14      5747
+15    396912
+16       342
+17     35699
+18     27073
+19     33622
+20     27586
+21     81381
+22      4743
+23       384
+24     45805
+25     75115
+26     91450
+27     69393
+28      2560
+29      9029
+30     13178
+31      8210
+32     18162
+33     10642
+34      5469
+35      2569
+36      3700
+37     54360
+38     48037
+39    108915
+40     68078
+41     11353
+42      2308
+43    113542
+44      1645
+45    212055
+46     59244
+Name: Listed capacity, dtype: int64
+In [392]:
+wind2
+Out[392]:	
+Country	Listed capacity	Entries	Prices	lng	lat
+7	Argentina	4138	88	50.00	-64.080551	-37.239199
+8	Australia	103056	210	60.00	133.058581	-24.841455
+9	Austria	3492	330	95.00	14.953150	47.919182
+10	Belgium	5239	455	130.00	4.737356	50.579678
+11	Brazil	195001	1053	315.00	-49.711622	-14.073688
+12	Bulgaria	768	82	50.00	25.138533	42.739420
+13	Canada	36536	385	115.00	-110.243808	56.701920
+14	Chile	5747	79	50.00	-69.837805	-54.015925
+15	China	396912	5492	350.00	98.769583	36.798710
+16	Czech Republic	342	97	50.00	15.538166	49.758268
+17	Denmark	35699	3377	350.00	9.460777	56.324314
+18	Estonia	27073	74	50.00	25.561757	58.498083
+19	Finland	33622	307	80.00	27.373291	65.030050
+20	France	27586	1884	350.00	2.099228	46.895071
+21	Germany	81381	11631	350.00	10.432351	51.431228
+22	Greece	4743	332	100.00	21.806331	39.080457
+23	Hungary	384	48	50.00	19.103249	47.245204
+24	India	45805	1167	350.00	79.179059	21.872205
+25	Ireland	75115	377	115.00	-7.806699	53.510364
+26	Italy	91450	799	240.00	12.631184	42.558217
+27	Japan	69393	539	155.00	138.348867	36.093430
+28	Lithuania	2560	91	50.00	24.127801	55.091237
+29	Mexico	9029	93	50.00	-102.250172	23.599373
+30	Netherlands	13178	1004	235.00	5.398113	52.040234
+31	Norway	8210	107	50.00	22.682486	79.958143
+32	Poland	18162	425	125.00	19.076267	51.884417
+33	Portugal	10642	455	130.00	-8.367926	39.510818
+34	Romania	5469	90	50.00	24.211692	46.036028
+35	Russia	2569	45	50.00	88.597328	59.405870
+36	South Africa	3700	44	50.00	26.147627	-28.408524
+37	South Korea	54360	220	65.00	127.901356	36.205013
+38	Spain	48037	1476	350.00	-3.519968	39.917913
+39	Sweden	108915	1338	350.00	14.786243	62.274881
+40	Taiwan	68078	129	50.00	120.988848	23.975268
+41	Turkey	11353	388	115.00	35.454931	38.633521
+42	Ukraine	2308	62	50.00	33.892781	48.300308
+43	United Kingdom	113542	1364	350.00	-1.753312	54.224688
+44	Uruguay	1645	55	50.00	-55.818920	-32.387455
+45	United States of America	212055	2201	350.00	-99.314832	37.236745
+46	Vietnam	59244	171	50.00	107.776934	15.994140
+In [ ]:
+ 
+In [393]:
+wind2.Prices=wind2.Prices.astype(float)
+wind2.Entries=wind2.Entries.astype(float)
+heat_df=wind2[["Prices","Entries"]]
+heat_data=list(zip(wind2.Prices, wind2.Entries))
+folium.plugins.HeatMap(heat_data).add_to(world_map)
+world_map
+Out[393]:	
+Make this Notebook Trusted to load map: File -> Trust Notebook
+In [394]:
+!conda install -c anaconda xlrd --yes
+Collecting package metadata (current_repodata.json): done
+Solving environment: - ^C
+failed with initial frozen solve. Retrying with flexible solve.
+
+CondaError: KeyboardInterrupt
+
+In [395]:
+print(wind2.shape)
+(40, 6)
+In [400]:
+datatypes2 = wind2.dtypes 
+  
+# Print the data types 
+# of each column 
+datatypes2
+Out[400]:	
+Country             object
+Listed capacity     object
+Entries            float64
+Prices             float64
+lng                float64
+lat                float64
+dtype: object
+In [401]:
+wind2['Listed capacity'] = pd.to_numeric(wind2['Listed capacity'], errors='coerce')
+In [402]:
+datatypes2 = wind2.dtypes 
+  
+# Print the data types 
+# of each column 
+datatypes2
+Out[402]:	
+Country             object
+Listed capacity      int64
+Entries            float64
+Prices             float64
+lng                float64
+lat                float64
+dtype: object
+In [396]:
+import json
+import os
+In [397]:
+world_geo = "world_countries_geojson.geojson" # geojson file
+
+# create a plain world map
+world_map = folium.Map(location=[0, 0], zoom_start=2)
+In [407]:
+world_map.choropleth(
+    geo_data=world_geo,
+    data=wind2,
+    columns=["Country", "Entries"],
+    key_on='feature.properties.name',
+    fill_color='GnBu',
+    fill_opacity=1,
+    line_opacity=0.2,
+    legend_name="Wind Capacity Units",
+    smooth_factor=0,
+    Highlight= True,
+    line_color = "#0000",
+    name = "Wind Capacity Units",
+    show=False,
+    overlay=True,
+    nan_fill_color = "White",
+    
+ )
+    
+folium.TileLayer('stamenterrain').add_to(world_map)
+    
+ax.legend()
+ax.set(title='Wind Capacity Units')
+ax.set_axis_off()
+
+# display map
+world_map
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+Out[407]:	
+Make this Notebook Trusted to load map: File -> Trust Notebook
+world_map2 = folium.Map(location=[0, 0], zoom_start=1.5) world_map2.choropleth( geo_data=world_geo, data=wind2, columns=["Country", "Listed capacity"], key_on='feature.properties.name', fill_color='GnBu', fill_opacity=1, line_opacity=0.2, legend_name="Wind Capacity (MW)", smooth_factor=0, Highlight= True, line_color = "#0000", name = "Wind Capacity (MW)", show=False, overlay=True, nan_fill_color = "White",
+
+)
+
+folium.TileLayer('stamenterrain').add_to(world_map2)
+
+display map
+
+world_map2
+
+We import the required library:
+
+from branca.element import Template, MacroElement
+
+template = """ {% macro html(this, kwargs) %}
+
+Legend (draggable!)
+States that have Null values.
+States that have wind capacity units >0.
+States that have wind capacity units >4000.
+States that have wind capacity units >8000.
+{% endmacro %}"""
+
+macro = MacroElement() macro._template = Template(template)
+
+world_map.get_root().add_child(macro)
+
+world_map
+
+In [353]:
+nans = wind2[wind2["Entries"].isnull()]['Country'].values
+gdf_nans = wind2[wind2['Country'].isin(nans)]
+sp = StripePattern(angle=45, color='grey', space_color='white')
+sp.add_to(world_map)
+folium.features.GeoJson(name="Click for Wills NaN values",data=gdf_nans, style_function=lambda x :{'fillPattern': sp},show=True).add_to(sample_map2)
+
+# We add a layer controller. 
+folium.LayerControl(collapsed=False).add_to(world_map)
+world_map
